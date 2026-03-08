@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface AppState {
   loading: boolean;
+  configLoaded: boolean;
   config: AppConfig;
   configDbId: string | null;
   currentUser: RegisteredUser | null;
@@ -64,6 +65,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [globalBookings, setGlobalBookings] = useState<Booking[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [screen, setScreen] = useState('splash');
   const [activeTab, setActiveTab] = useState('search');
 
@@ -156,6 +158,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { config: cfg, configDbId: cid } = await loadAppConfig();
       setConfig(cfg);
       setConfigDbId(cid);
+      setConfigLoaded(true);
       applyTheme(cfg.theme);
 
       // Set up auth listener BEFORE checking session
@@ -313,12 +316,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const contextValue = useMemo(() => ({
-    loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
     setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
     setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
     setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
-  }), [loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+  }), [loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
     buildLocs, checkExpired, getUserPayable, logout, loadUserData]);
 

@@ -5,31 +5,64 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function hashPassword(password: string): Promise<string> {
+const PBKDF2_ITERATIONS = 310000;
+
+async function hashPasswordPbkdf2(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const saltHex = [...salt].map(b => b.toString(16).padStart(2, "0")).join("");
-  const data = new TextEncoder().encode(saltHex + password);
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const derived = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    keyMaterial, 256
+  );
+  const hashHex = [...new Uint8Array(derived)].map(b => b.toString(16).padStart(2, "0")).join("");
+  return `$pbkdf2$${PBKDF2_ITERATIONS}$${saltHex}$${hashHex}`;
+}
+
+async function verifyPasswordPbkdf2(password: string, stored: string): Promise<boolean> {
+  const parts = stored.split("$");
+  // $pbkdf2$iterations$salt$hash
+  const iterations = parseInt(parts[2]);
+  const saltHex = parts[3];
+  const storedHash = parts[4];
+  const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const derived = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    keyMaterial, 256
+  );
+  const hashHex = [...new Uint8Array(derived)].map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashHex === storedHash;
+}
+
+async function verifyPasswordSha256(password: string, stored: string): Promise<boolean> {
+  const parts = stored.split("$");
+  const salt = parts[2];
+  const storedHash = parts[3];
+  const data = new TextEncoder().encode(salt + password);
   const hash = await crypto.subtle.digest("SHA-256", data);
   const hashHex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
-  return `$sha256$${saltHex}$${hashHex}`;
+  return hashHex === storedHash;
 }
 
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  if (stored.startsWith("$sha256$")) {
-    const parts = stored.split("$");
-    const salt = parts[2];
-    const storedHash = parts[3];
-    const data = new TextEncoder().encode(salt + password);
-    const hash = await crypto.subtle.digest("SHA-256", data);
-    const hashHex = [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
-    return hashHex === storedHash;
+  if (stored.startsWith("$pbkdf2$")) {
+    return verifyPasswordPbkdf2(password, stored);
   }
+  if (stored.startsWith("$sha256$")) {
+    return verifyPasswordSha256(password, stored);
+  }
+  // Legacy plaintext
   return stored === password;
 }
 
 async function generateToken(adminId: string): Promise<string> {
   const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const exp = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  const exp = Date.now() + 24 * 60 * 60 * 1000;
   const payload = `${adminId}.${exp}`;
   const key = await crypto.subtle.importKey(
     "raw", new TextEncoder().encode(secret),
@@ -78,9 +111,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auto-migrate plaintext passwords
-    if (!admin.password_hash.startsWith("$sha256$")) {
-      const hashed = await hashPassword(password);
+    // Auto-migrate old hashes to PBKDF2
+    if (!admin.password_hash.startsWith("$pbkdf2$")) {
+      const hashed = await hashPasswordPbkdf2(password);
       await supabase.from("admins").update({ password_hash: hashed }).eq("id", admin.id);
     }
 
