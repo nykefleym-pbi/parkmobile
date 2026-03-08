@@ -47,6 +47,18 @@ export default function TicketScreen() {
               <div className="pa-tkf"><label>Vehicle</label><p>{bk.car.name}</p></div>
               <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Plate</label><p>{bk.car.plate}</p></div>
             </div>
+            {penaltyAmt(bk) > 0 && bk.penalty && (
+              <div className="pa-tkr">
+                <div className="pa-tkf"><label>Penalty ({bk.penalty.days}d)</label><p style={{ color: '#EF6C00' }}>{formatPeso(penaltyAmt(bk))}</p></div>
+                <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Total Owed</label><p style={{ color: 'var(--pa-red)' }}>{formatPeso(totalOwed(bk))}</p></div>
+              </div>
+            )}
+            {totalPaid(bk) > 0 && (
+              <div className="pa-tkr">
+                <div className="pa-tkf"><label>Paid</label><p style={{ color: 'var(--pa-grn)' }}>{formatPeso(totalPaid(bk))}</p></div>
+                <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Balance</label><p style={{ color: remaining(bk) > 0 ? 'var(--pa-red)' : 'var(--pa-grn)' }}>{formatPeso(remaining(bk))}</p></div>
+              </div>
+            )}
             <div className="pa-tkr">
               <div className="pa-tkf"><label>Total</label><p>{formatPeso(baseFee(bk))}</p></div>
               <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Status</label><p style={{ color: isFullyPaid(bk) ? 'var(--pa-grn)' : isPartiallyPaid(bk) ? '#EF6C00' : 'var(--pa-red)' }}>{isFullyPaid(bk) ? 'Paid' : isPartiallyPaid(bk) ? 'Partial' : 'Unpaid'}</p></div>

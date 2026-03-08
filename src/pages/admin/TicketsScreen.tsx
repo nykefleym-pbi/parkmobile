@@ -138,7 +138,7 @@ export default function TicketsScreen() {
                 ))}
               </div>
             )}
-            <div className="pa-f-group"><label className="pa-f-label">Amount Paid (₱)</label><input className="pa-f-input" type="number" value={payForm.amount} onChange={e => setPayForm(p => ({ ...p, amount: e.target.value }))} /></div>
+            <div className="pa-f-group"><label className="pa-f-label">Amount Paid (₱) — max: {formatPeso(remaining(payBk))}</label><input className="pa-f-input" type="number" max={remaining(payBk)} value={payForm.amount} onChange={e => { const v = Math.min(parseFloat(e.target.value) || 0, remaining(payBk)); setPayForm(p => ({ ...p, amount: v > 0 ? String(v) : e.target.value })); }} /></div>
             <div className="pa-f-group">
               <label className="pa-f-label">Payment Method</label>
               <select className="pa-f-select" value={payForm.method} onChange={e => setPayForm(p => ({ ...p, method: e.target.value }))}>
