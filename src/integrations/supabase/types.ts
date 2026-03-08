@@ -94,7 +94,7 @@ export type Database = {
           user_id: string
           user_name: string
           vehicle_color: string | null
-          vehicle_id: string
+          vehicle_id: string | null
           vehicle_name: string
           vehicle_plate: string
         }
@@ -114,7 +114,7 @@ export type Database = {
           user_id: string
           user_name: string
           vehicle_color?: string | null
-          vehicle_id: string
+          vehicle_id?: string | null
           vehicle_name: string
           vehicle_plate: string
         }
@@ -134,7 +134,7 @@ export type Database = {
           user_id?: string
           user_name?: string
           vehicle_color?: string | null
-          vehicle_id?: string
+          vehicle_id?: string | null
           vehicle_name?: string
           vehicle_plate?: string
         }

@@ -5,7 +5,7 @@ export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: 
   const defaults: AppConfig = {
     subdiv: 'Camella Terra Alta', theme: 'green', logo: null,
     appName: 'CTA-ParkAssist',
-    hoa: { phone: '+63 917 000 1234', email: 'hoa@camellaterralta.com', hours: 'Mon–Sat, 8AM–5PM' },
+    hoa: { phone: '+63 917 000 1234', email: 'admin@camellaterralta.com', hours: 'Mon–Sat, 8AM–5PM' },
     spaces: [
       { name: 'Open Space 3', addr: 'Near Block 1, West Wing', slots: 15, rate: 1500 },
       { name: 'Open Space 5', addr: 'Between Block 14 and Block 9', slots: 15, rate: 1500 },
