@@ -88,7 +88,7 @@ export default function ProfileScreen() {
       }
       setCars(newCars);
     } catch (err: any) {
-      toast({ title: 'Error removing vehicle', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error removing vehicle. Please try again.');
     } finally {
       setSaving(false);
     }
