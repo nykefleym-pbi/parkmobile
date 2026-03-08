@@ -64,6 +64,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [globalBookings, setGlobalBookings] = useState<Booking[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [screen, setScreen] = useState('splash');
   const [activeTab, setActiveTab] = useState('search');
 

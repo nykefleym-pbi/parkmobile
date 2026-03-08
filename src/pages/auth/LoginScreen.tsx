@@ -9,15 +9,6 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function doGoogle() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) { setError(error.message); setLoading(false); }
-  }
-
   async function doLogin() {
     if (!email || !pass) { setError('Please enter email and password.'); return; }
     setLoading(true);

@@ -35,11 +35,3 @@ export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: 
     return { config: defaults, configDbId: null };
   }
 }
-
-export async function saveConfigToDb(configDbId: string | null, config: AppConfig) {
-  if (!configDbId) return;
-  await supabase.from('app_config').update({
-    subdiv_name: config.subdiv, app_name: config.appName, theme: config.theme,
-    logo_url: config.logo, hoa_phone: config.hoa.phone, hoa_email: config.hoa.email, hoa_hours: config.hoa.hours,
-  }).eq('id', configDbId);
-}

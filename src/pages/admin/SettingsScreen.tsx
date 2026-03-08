@@ -1,17 +1,30 @@
 import { useApp } from '@/contexts/AppContext';
-import { supabase } from '@/integrations/supabase/client';
-import { saveConfigToDb } from '@/lib/supabase-data';
 import { applyTheme, THEMES } from '@/lib/themes';
 import { autoPrefix } from '@/lib/helpers';
 import { LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SettingsScreen() {
-  const { config, setConfig, configDbId, logout } = useApp();
+  const { config, setConfig, configDbId, adminToken, logout } = useApp();
+
+  async function adminAction(action: string, data: any) {
+    const { data: res, error } = await supabase.functions.invoke('admin-action', {
+      body: { token: adminToken, action, data },
+    });
+    if (error) console.error('Admin action error:', error);
+    return res;
+  }
 
   function updateConfig(partial: Partial<typeof config>) {
     setConfig(prev => {
       const next = { ...prev, ...partial };
-      saveConfigToDb(configDbId, next);
+      if (configDbId) {
+        adminAction('update_config', {
+          id: configDbId,
+          subdiv_name: next.subdiv, app_name: next.appName, theme: next.theme,
+          logo_url: next.logo, hoa_phone: next.hoa.phone, hoa_email: next.hoa.email, hoa_hours: next.hoa.hours,
+        });
+      }
       return next;
     });
   }
@@ -26,24 +39,24 @@ export default function SettingsScreen() {
       const spaces = [...prev.spaces];
       (spaces[idx] as any)[field] = val;
       const sp = spaces[idx];
-      if (sp.id) supabase.from('spaces').update({ name: sp.name, address: sp.addr, slots: sp.slots, rate: sp.rate }).eq('id', sp.id);
-      const next = { ...prev, spaces };
-      saveConfigToDb(configDbId, next);
-      return next;
+      if (sp.id) {
+        adminAction('update_space', { id: sp.id, name: sp.name, address: sp.addr, slots: sp.slots, rate: sp.rate });
+      }
+      return { ...prev, spaces };
     });
   }
 
   async function addSpace() {
     const n = config.spaces.length + 1;
-    const { data: res } = await supabase.from('spaces').insert({ name: 'Space ' + n, address: 'New parking area', slots: 10, rate: 1500, sort_order: n }).select();
-    const dbId = res && res.length ? res[0].id : undefined;
+    const res = await adminAction('add_space', { name: 'Space ' + n, address: 'New parking area', slots: 10, rate: 1500, sort_order: n });
+    const dbId = res?.record?.id;
     setConfig(prev => ({ ...prev, spaces: [...prev.spaces, { id: dbId, name: 'Space ' + n, addr: 'New parking area', slots: 10, rate: 1500 }] }));
   }
 
   async function removeSpace(idx: number) {
     if (config.spaces.length <= 1) { alert('Need at least one space.'); return; }
     const sp = config.spaces[idx];
-    if (sp.id) await supabase.from('spaces').delete().eq('id', sp.id);
+    if (sp.id) await adminAction('delete_space', { id: sp.id });
     setConfig(prev => ({ ...prev, spaces: prev.spaces.filter((_, i) => i !== idx) }));
   }
 
