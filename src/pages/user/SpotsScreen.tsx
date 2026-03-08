@@ -3,12 +3,13 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { isoDate, today, addDays } from '@/lib/helpers';
 import { ArrowLeft, Check } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen } = useApp();
-  const locs = buildLocs();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config } = useApp();
+  const locs = useMemo(() => buildLocs(), [config.spaces, buildLocs]);
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
   const [selCarIdx, setSelCarIdx] = useState(() => { const i = cars.findIndex(c => c.primary); return i >= 0 ? i : 0; });
@@ -23,30 +24,43 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
   if (!loc) return null;
 
   async function confirmBooking() {
-    if (!selectedSpot || !availCars.length || !authUser) return;
-    setConfirmed(true);
-    const s = isoDate(today()), e = isoDate(addDays(today(), 30));
+    if (!selectedSpot || !availCars.length || !authUser || confirmed) return;
     const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
-    const code = 'BK-' + Date.now();
 
-    const { data: res } = await supabase.from('bookings').insert({
-      booking_code: code, user_id: authUser.id, space_name: loc.name, slot_id: selectedSpot,
-      vehicle_id: car.dbId || undefined, vehicle_name: car.name, vehicle_plate: car.plate,
-      vehicle_color: car.color, rate: loc.rate, status: 'active', start_date: s, end_date: e,
-      user_name: profile.name, user_email: profile.email, user_block_lot: profile.blklot,
-    } as any).select();
-    const dbId = res && res.length ? res[0].id : null;
+    if (!car.dbId) {
+      toast({ title: 'Vehicle not synced', description: 'This vehicle has not been saved to the database yet. Please go to Profile and re-save it.', variant: 'destructive' });
+      return;
+    }
 
-    const bk = {
-      dbId, id: code, slotId: selectedSpot, locName: loc.name, startDate: s, endDate: e,
-      status: 'active', cancelledDate: null, car: { name: car.name, plate: car.plate, color: car.color },
-      userName: profile.name, userEmail: profile.email, userBlklot: profile.blklot,
-      rate: loc.rate, userId: authUser.id, payments: [], penalty: null,
-    };
-    setBookings(prev => [...prev, bk]);
-    setOccupiedSlots(prev => [...prev, selectedSpot]);
-    setBooking(bk);
-    setTimeout(() => setScreen('ticket'), 1100);
+    setConfirmed(true);
+    try {
+      const s = isoDate(today()), e = isoDate(addDays(today(), 30));
+      const code = 'BK-' + Date.now();
+
+      const { data: res, error } = await supabase.from('bookings').insert({
+        booking_code: code, user_id: authUser.id, space_name: loc.name, slot_id: selectedSpot,
+        vehicle_id: car.dbId, vehicle_name: car.name, vehicle_plate: car.plate,
+        vehicle_color: car.color, rate: loc.rate, status: 'active', start_date: s, end_date: e,
+        user_name: profile.name, user_email: profile.email, user_block_lot: profile.blklot,
+      }).select();
+
+      if (error) throw error;
+
+      const dbId = res && res.length ? res[0].id : null;
+      const bk = {
+        dbId, id: code, slotId: selectedSpot, locName: loc.name, startDate: s, endDate: e,
+        status: 'active', cancelledDate: null, car: { name: car.name, plate: car.plate, color: car.color },
+        userName: profile.name, userEmail: profile.email, userBlklot: profile.blklot,
+        rate: loc.rate, userId: authUser.id, payments: [], penalty: null,
+      };
+      setBookings(prev => [...prev, bk]);
+      setOccupiedSlots(prev => [...prev, selectedSpot]);
+      setBooking(bk);
+      setTimeout(() => setScreen('ticket'), 1100);
+    } catch (err: any) {
+      setConfirmed(false);
+      toast({ title: 'Booking failed', description: err?.message || 'Could not complete your reservation.', variant: 'destructive' });
+    }
   }
 
   return (
