@@ -34,16 +34,25 @@ export default function TicketsScreen() {
     const rem = remaining(payBk);
     if (amt > rem) { alert(`Amount exceeds balance of ₱${rem.toLocaleString()}.`); return; }
 
-    if (payBk.dbId) {
-      await supabase.from('payments').insert({
-        booking_id: payBk.dbId, amount: amt, method: payForm.method,
-        transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
-      });
+    const insertData = {
+      booking_id: payBk.dbId, amount: amt, method: payForm.method,
+      transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
+    };
+
+    const { data: res, error } = await supabase.functions.invoke('admin-action', {
+      body: { token: adminToken, action: 'insert_payment', data: insertData },
+    });
+
+    if (error || res?.error) {
+      toast.error(res?.error || 'Failed to record payment');
+      return;
     }
+
     setGlobalBookings(prev => prev.map(b => b.id === payTarget ? {
       ...b, payments: [...b.payments, { amount: amt, method: payForm.method, date: payForm.date, receipt: payForm.receipt, receiptIssued: payForm.issued }]
     } : b));
     setPayTarget(null);
+    toast.success('Payment recorded');
   }
 
   async function confirmPenalty() {
