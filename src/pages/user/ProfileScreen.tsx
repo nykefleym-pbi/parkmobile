@@ -233,6 +233,11 @@ export default function ProfileScreen() {
               <label className="pa-av-btn" htmlFor="pm-avatar-input">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>
               </label>
+              {profileForm.avatar && (
+                <button type="button" className="pa-av-btn" style={{ right: -12, left: 'auto', background: '#e53e3e' }} onClick={() => setProfileForm(p => ({ ...p, avatar: '' }))}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                </button>
+              )}
               <input type="file" id="pm-avatar-input" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
             </div>
             <div className="pa-f-group"><label className="pa-f-label">Full Name</label><input className="pa-f-input" value={profileForm.name} onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))} /></div>
