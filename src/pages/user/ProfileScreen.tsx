@@ -65,7 +65,7 @@ export default function ProfileScreen() {
       setCars(newCars);
       setShowCarModal(false);
     } catch (err: any) {
-      toast({ title: 'Error saving vehicle', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error saving vehicle. Please try again.');
     } finally {
       setSaving(false);
     }
