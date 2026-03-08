@@ -15,7 +15,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState<any>(null);
 
-  const bookedIds = useMemo(() => globalBookings.filter(b => b.status === 'active').map(b => b.slotId), [globalBookings]);
+  const bookedIds = occupiedSlots;
   const myIds = useMemo(() => bookings.filter(b => b.status === 'active').map(b => b.slotId), [bookings]);
   const bookedPlates = useMemo(() => bookings.filter(b => b.status === 'active').map(b => b.car.plate), [bookings]);
   const availCars = useMemo(() => cars.filter(c => !bookedPlates.includes(c.plate)), [cars, bookedPlates]);
