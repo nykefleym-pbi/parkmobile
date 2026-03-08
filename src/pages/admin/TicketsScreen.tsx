@@ -31,7 +31,7 @@ export default function TicketsScreen() {
     const amt = parseFloat(payForm.amount) || 0;
     if (amt <= 0) { alert('Enter a valid amount.'); return; }
     const rem = remaining(payBk);
-    if (amt > rem) { alert('Exceeds balance.'); return; }
+    if (amt > rem) { alert(`Amount exceeds balance of ₱${rem.toLocaleString()}.`); return; }
 
     if (payBk.dbId) {
       await supabase.from('payments').insert({
