@@ -144,8 +144,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (screen === 'splash' || screen === 'login' || screen === 'signup') {
             await loadUserData(session.user.id);
             const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
-            if (prof && (!prof.phone || !prof.block_lot)) {
-              setScreen('complete-profile');
+            const hasProfile = prof && prof.phone && prof.block_lot;
+            if (!hasProfile) {
+              // Check if metadata has the fields (email signup stores them there)
+              const meta = session.user.user_metadata;
+              if (meta?.phone && meta?.block_lot) {
+                // Auto-populate profile from metadata
+                await supabase.from('profiles').update({
+                  phone: meta.phone,
+                  block_lot: meta.block_lot,
+                  residence_type: meta.residence_type || 'Resident',
+                }).eq('id', session.user.id);
+
+                // Check if vehicle already exists, if not insert from metadata
+                const { data: existingVehicles } = await supabase.from('vehicles').select('id').eq('user_id', session.user.id);
+                if ((!existingVehicles || existingVehicles.length === 0) && meta.car_name && meta.car_plate) {
+                  await supabase.from('vehicles').insert({
+                    user_id: session.user.id,
+                    name: meta.car_name,
+                    plate: meta.car_plate,
+                    color: meta.car_color || 'White',
+                    is_primary: true,
+                  });
+                }
+
+                await loadUserData(session.user.id);
+                setActiveTab('search');
+                setScreen('home');
+              } else {
+                setScreen('complete-profile');
+              }
             } else {
               setActiveTab('search');
               setScreen('home');
