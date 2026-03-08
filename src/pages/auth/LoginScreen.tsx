@@ -66,6 +66,9 @@ export default function LoginScreen() {
         {loading ? 'Logging in...' : 'Log In'}
       </button>
       <div className="pa-auth-link">
+        <a onClick={() => setScreen('forgot-password')}>Forgot Password?</a>
+      </div>
+      <div className="pa-auth-link" style={{ marginTop: 8 }}>
         Don't have an account? <a onClick={() => setScreen('signup')}>Sign Up</a>
       </div>
       <div className="pa-auth-divider"><span>or</span></div>
