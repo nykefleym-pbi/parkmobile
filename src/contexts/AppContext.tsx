@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { AppConfig, Booking, Car, RegisteredUser, UserProfile, Location } from '@/lib/types';
 import { loadAppConfig } from '@/lib/supabase-data';
 import { applyTheme } from '@/lib/themes';
@@ -284,14 +284,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setActiveTab('search');
   }, []);
 
+  const contextValue = useMemo(() => ({
+    loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
+    setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
+    setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
+    setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
+  }), [loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
+    buildLocs, checkExpired, getUserPayable, logout, loadUserData]);
+
   return (
-    <AppContext.Provider value={{
-      loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
-      globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
-      setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
-      setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
-      setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );
