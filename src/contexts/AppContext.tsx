@@ -247,13 +247,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const checkExpired = useCallback(() => {
     const now = today();
-    setGlobalBookings(prev => prev.map(b => {
+    const expireMapper = (b: Booking) => {
       if (b.status !== 'active') return b;
       const effEnd = hasPaid(b) ? coverageEndDate(b) : b.endDate;
       const ed = typeof effEnd === 'string' ? new Date(effEnd + 'T00:00:00') : effEnd;
       if (now >= ed) return { ...b, status: 'expired' };
       return b;
-    }));
+    };
+    setGlobalBookings(prev => {
+      const next = prev.map(expireMapper);
+      return next.some((b, i) => b !== prev[i]) ? next : prev;
+    });
+    setBookings(prev => {
+      const next = prev.map(expireMapper);
+      return next.some((b, i) => b !== prev[i]) ? next : prev;
+    });
   }, []);
 
   const getUserPayable = useCallback(() => {
