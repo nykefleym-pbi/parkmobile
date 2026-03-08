@@ -1,13 +1,13 @@
+import { useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { LogOut } from 'lucide-react';
 
 export default function HomeScreen() {
-  const { config, globalBookings, bookings, buildLocs, logout, setScreen } = useApp();
-  const locs = buildLocs();
+  const { config, occupiedSlots, buildLocs, logout, setScreen } = useApp();
+  const locs = useMemo(() => buildLocs(), [buildLocs]);
 
   function getAvail(loc: ReturnType<typeof buildLocs>[0]) {
-    const ids = globalBookings.filter(b => b.status === 'active').map(b => b.slotId);
-    return loc.spots.filter(s => s.ok && !ids.includes(s.id)).length;
+    return loc.spots.filter(s => s.ok && !occupiedSlots.includes(s.id)).length;
   }
 
   return (

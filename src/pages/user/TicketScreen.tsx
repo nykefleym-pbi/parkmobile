@@ -1,5 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
-import { fmtDate } from '@/lib/helpers';
+import { fmtDate, formatPeso } from '@/lib/helpers';
+import { baseFee, remaining, isFullyPaid } from '@/lib/booking-utils';
 import { Check } from 'lucide-react';
 
 export default function TicketScreen() {
@@ -47,7 +48,8 @@ export default function TicketScreen() {
               <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Plate</label><p>{bk.car.plate}</p></div>
             </div>
             <div className="pa-tkr">
-              <div className="pa-tkf"><label>Total</label><p>₱{bk.rate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p></div>
+              <div className="pa-tkf"><label>Total</label><p>{formatPeso(baseFee(bk))}</p></div>
+              <div className="pa-tkf" style={{ textAlign: 'right' }}><label>Status</label><p style={{ color: isFullyPaid(bk) ? 'var(--pa-grn)' : 'var(--pa-red)' }}>{isFullyPaid(bk) ? 'Paid' : 'Unpaid'}</p></div>
             </div>
             <div className="pa-qr-wrap">
               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&format=png&data=${qrData}`}
