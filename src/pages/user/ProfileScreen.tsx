@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getInitials, fmtMonthYear, formatPeso } from '@/lib/helpers';

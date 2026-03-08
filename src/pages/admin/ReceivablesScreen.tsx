@@ -5,7 +5,8 @@ import { LogOut } from 'lucide-react';
 
 export default function ReceivablesScreen() {
   const { globalBookings, checkExpired, logout } = useApp();
-  checkExpired();
+  
+  React.useEffect(() => { checkExpired(); }, []);
 
   const userMap: Record<string, { name: string; blklot: string; email: string; totalOwedAmt: number; totalPaidAmt: number; penalties: number; count: number }> = {};
   globalBookings.forEach(bk => {

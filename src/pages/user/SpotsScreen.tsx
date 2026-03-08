@@ -3,7 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { isoDate, today, addDays } from '@/lib/helpers';
 import { ArrowLeft, Check } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 

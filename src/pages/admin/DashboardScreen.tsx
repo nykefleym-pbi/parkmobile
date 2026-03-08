@@ -5,7 +5,9 @@ import { LogOut } from 'lucide-react';
 
 export default function DashboardScreen() {
   const { config, globalBookings, checkExpired, logout, setActiveTab, setScreen } = useApp();
-  checkExpired();
+  
+  // Run checkExpired in effect instead of render body
+  React.useEffect(() => { checkExpired(); }, []);
 
   const all = globalBookings;
   const act = all.filter(b => b.status === 'active');
