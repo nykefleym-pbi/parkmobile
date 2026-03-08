@@ -5,6 +5,8 @@ import BottomTabBar from '@/components/BottomTabBar';
 import LoginScreen from '@/pages/auth/LoginScreen';
 import SignupScreen from '@/pages/auth/SignupScreen';
 import AdminLoginScreen from '@/pages/auth/AdminLoginScreen';
+import ForgotPasswordScreen from '@/pages/auth/ForgotPasswordScreen';
+import CompleteProfileScreen from '@/pages/auth/CompleteProfileScreen';
 import HomeScreen from '@/pages/user/HomeScreen';
 import SpotsScreen from '@/pages/user/SpotsScreen';
 import TicketScreen from '@/pages/user/TicketScreen';
@@ -20,7 +22,7 @@ function AppShell() {
   const { screen, activeTab, isAdmin, buildLocs } = useApp();
   const locs = buildLocs();
 
-  const showTabs = !['splash', 'login', 'signup', 'admin-login', 'ticket', 'help'].includes(screen)
+  const showTabs = !['splash', 'login', 'signup', 'admin-login', 'ticket', 'help', 'forgot-password', 'complete-profile'].includes(screen)
     && !screen.startsWith('spots') && !screen.startsWith('spots-view');
 
   const content = useMemo(() => {
@@ -28,6 +30,8 @@ function AppShell() {
     if (screen === 'login') return <LoginScreen />;
     if (screen === 'signup') return <SignupScreen />;
     if (screen === 'admin-login') return <AdminLoginScreen />;
+    if (screen === 'forgot-password') return <ForgotPasswordScreen />;
+    if (screen === 'complete-profile') return <CompleteProfileScreen />;
     if (screen === 'ticket') return <TicketScreen />;
     if (screen === 'help') return <HelpScreen />;
 
