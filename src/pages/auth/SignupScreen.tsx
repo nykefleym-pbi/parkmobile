@@ -64,7 +64,6 @@ export default function SignupScreen() {
       });
 
       setSuccess(true);
-      setTimeout(() => setScreen('login'), 1500);
     } catch {
       setError('Connection error. Please try again.');
     } finally {
