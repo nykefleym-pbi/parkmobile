@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso } from '@/lib/helpers';
-import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily, addDays } from '@/lib/booking-utils';
+import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
+import { addDays } from '@/lib/helpers';
 import { LogOut } from 'lucide-react';
 import { Booking } from '@/lib/types';
 
