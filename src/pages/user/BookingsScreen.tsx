@@ -119,14 +119,16 @@ export default function BookingsScreen() {
                 </div>
               )}
             </div>
+            {isC && rem > 0 && (
+              <div className="pa-penalty-warn">
+                <div style={{ fontWeight: 700, color: 'var(--pa-red)', marginBottom: 4 }}>⚠ Settlement Required</div>
+                <div style={{ color: 'var(--pa-tx2)' }}>Prorated fee of <strong style={{ color: 'var(--pa-red)' }}>{formatPeso(owed)}</strong> must still be settled. Balance: <strong style={{ color: 'var(--pa-red)' }}>{formatPeso(rem)}</strong></div>
+              </div>
+            )}
             {isA && (
               <div className="pa-bk-actions">
                 <button className="pa-bk-btn" onClick={() => setScreen('spots-view:' + bk.locName + ':' + bk.slotId)}>View Space</button>
-                {canCancel ? (
-                  <button className="pa-bk-btn danger" onClick={() => setCancelId(bk.id)}>Cancel</button>
-                ) : (
-                  <button className="pa-bk-btn" disabled style={{ opacity: .4, cursor: 'not-allowed' }}>Paid — No Cancel</button>
-                )}
+                <button className="pa-bk-btn danger" onClick={() => setCancelId(bk.id)}>Cancel</button>
               </div>
             )}
           </div>
