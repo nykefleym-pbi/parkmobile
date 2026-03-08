@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          invite_code: string | null
           name: string
           password_hash: string
           username: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          invite_code?: string | null
           name: string
           password_hash: string
           username: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          invite_code?: string | null
           name?: string
           password_hash?: string
           username?: string
@@ -40,6 +43,7 @@ export type Database = {
       }
       app_config: {
         Row: {
+          admin_id: string | null
           app_name: string
           created_at: string | null
           hoa_email: string | null
@@ -52,6 +56,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_id?: string | null
           app_name?: string
           created_at?: string | null
           hoa_email?: string | null
@@ -64,6 +69,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_id?: string | null
           app_name?: string
           created_at?: string | null
           hoa_email?: string | null
@@ -75,10 +81,19 @@ export type Database = {
           theme?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_config_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: true
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bookings: {
         Row: {
+          admin_id: string | null
           booking_code: string
           cancelled_date: string | null
           created_at: string | null
@@ -99,6 +114,7 @@ export type Database = {
           vehicle_plate: string
         }
         Insert: {
+          admin_id?: string | null
           booking_code: string
           cancelled_date?: string | null
           created_at?: string | null
@@ -119,6 +135,7 @@ export type Database = {
           vehicle_plate: string
         }
         Update: {
+          admin_id?: string | null
           booking_code?: string
           cancelled_date?: string | null
           created_at?: string | null
@@ -139,6 +156,13 @@ export type Database = {
           vehicle_plate?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -243,6 +267,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_id: string | null
           avatar_url: string | null
           block_lot: string | null
           created_at: string | null
@@ -253,6 +278,7 @@ export type Database = {
           residence_type: string | null
         }
         Insert: {
+          admin_id?: string | null
           avatar_url?: string | null
           block_lot?: string | null
           created_at?: string | null
@@ -263,6 +289,7 @@ export type Database = {
           residence_type?: string | null
         }
         Update: {
+          admin_id?: string | null
           avatar_url?: string | null
           block_lot?: string | null
           created_at?: string | null
@@ -272,11 +299,20 @@ export type Database = {
           phone?: string | null
           residence_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spaces: {
         Row: {
           address: string
+          admin_id: string | null
           created_at: string | null
           id: string
           name: string
@@ -286,6 +322,7 @@ export type Database = {
         }
         Insert: {
           address?: string
+          admin_id?: string | null
           created_at?: string | null
           id?: string
           name: string
@@ -295,6 +332,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          admin_id?: string | null
           created_at?: string | null
           id?: string
           name?: string
@@ -302,7 +340,15 @@ export type Database = {
           slots?: number
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spaces_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {
@@ -338,6 +384,7 @@ export type Database = {
     Views: {
       booking_summary: {
         Row: {
+          admin_id: string | null
           base_fee: number | null
           booking_code: string | null
           cancelled_date: string | null
@@ -361,7 +408,64 @@ export type Database = {
           vehicle_name: string | null
           vehicle_plate: string | null
         }
+        Insert: {
+          admin_id?: string | null
+          base_fee?: never
+          booking_code?: string | null
+          cancelled_date?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string | null
+          penalty_amount?: never
+          penalty_days?: never
+          rate?: number | null
+          slot_id?: string | null
+          space_name?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_paid?: never
+          user_block_lot?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_name?: string | null
+          vehicle_plate?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          base_fee?: never
+          booking_code?: string | null
+          cancelled_date?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string | null
+          penalty_amount?: never
+          penalty_days?: never
+          rate?: number | null
+          slot_id?: string | null
+          space_name?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_paid?: never
+          user_block_lot?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_name?: string | null
+          vehicle_plate?: string | null
+        }
         Relationships: [
+          {
+            foreignKeyName: "bookings_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -373,12 +477,19 @@ export type Database = {
       }
     }
     Functions: {
-      get_occupied_slots: {
-        Args: never
-        Returns: {
-          slot_id: string
-        }[]
-      }
+      get_occupied_slots:
+        | {
+            Args: never
+            Returns: {
+              slot_id: string
+            }[]
+          }
+        | {
+            Args: { _admin_id?: string }
+            Returns: {
+              slot_id: string
+            }[]
+          }
     }
     Enums: {
       [_ in never]: never
