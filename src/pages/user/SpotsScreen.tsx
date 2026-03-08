@@ -28,7 +28,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
     const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
 
     if (!car.dbId) {
-      toast({ title: 'Vehicle not synced', description: 'This vehicle has not been saved to the database yet. Please go to Profile and re-save it.', variant: 'destructive' });
+      toast.error('Vehicle not synced. Please go to Profile and re-save it.');
       return;
     }
 
