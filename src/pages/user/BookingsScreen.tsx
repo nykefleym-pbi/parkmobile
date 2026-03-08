@@ -21,7 +21,7 @@ export default function BookingsScreen() {
     const cd = isoDate(today());
     const update = (b: Booking) => b.id === cancelId ? { ...b, status: 'cancelled', cancelledDate: cd } : b;
     setBookings(prev => prev.map(update));
-    setGlobalBookings(prev => prev.map(update));
+    setOccupiedSlots(prev => prev.filter(s => s !== bk.slotId));
     if (bk.dbId) await supabase.from('bookings').update({ status: 'cancelled', cancelled_date: cd }).eq('id', bk.dbId);
     setCancelId(null);
   }

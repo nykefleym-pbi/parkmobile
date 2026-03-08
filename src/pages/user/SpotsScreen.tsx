@@ -44,7 +44,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
       rate: loc.rate, userId: currentUser.dbId!, payments: [], penalty: null,
     };
     setBookings(prev => [...prev, bk]);
-    setGlobalBookings(prev => [...prev, bk]);
+    setOccupiedSlots(prev => [...prev, selectedSpot]);
     setBooking(bk);
     setTimeout(() => setScreen('ticket'), 1100);
   }
