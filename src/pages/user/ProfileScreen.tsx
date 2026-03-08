@@ -73,24 +73,43 @@ export default function ProfileScreen() {
 
   async function deleteCar(i: number) {
     if (cars.length <= 1) { alert('Need at least one vehicle.'); return; }
-    const c = cars[i];
-    if (c.dbId) await supabase.from('vehicles').delete().eq('id', c.dbId);
-    const newCars = cars.filter((_, j) => j !== i);
-    if (c.primary && newCars.length) {
-      newCars[0].primary = true;
-      if (newCars[0].dbId) await supabase.from('vehicles').update({ is_primary: true }).eq('id', newCars[0].dbId);
+    if (saving) return;
+    setSaving(true);
+    try {
+      const c = cars[i];
+      if (c.dbId) {
+        const { error } = await supabase.from('vehicles').delete().eq('id', c.dbId);
+        if (error) throw error;
+      }
+      const newCars = cars.filter((_, j) => j !== i);
+      if (c.primary && newCars.length) {
+        newCars[0].primary = true;
+        if (newCars[0].dbId) await supabase.from('vehicles').update({ is_primary: true }).eq('id', newCars[0].dbId);
+      }
+      setCars(newCars);
+    } catch (err: any) {
+      toast({ title: 'Error removing vehicle', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
-    setCars(newCars);
   }
 
   async function setPrimary(i: number) {
-    const newCars = cars.map((c, j) => ({ ...c, primary: j === i }));
-    setCars(newCars);
-    await Promise.all(
-      newCars.filter(c => c.dbId).map(c =>
-        supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId!)
-      )
-    );
+    if (saving) return;
+    setSaving(true);
+    try {
+      const newCars = cars.map((c, j) => ({ ...c, primary: j === i }));
+      setCars(newCars);
+      await Promise.all(
+        newCars.filter(c => c.dbId).map(c =>
+          supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId!)
+        )
+      );
+    } catch (err: any) {
+      toast({ title: 'Error setting primary', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveProfile() {
