@@ -304,42 +304,6 @@ export type Database = {
         }
         Relationships: []
       }
-      users: {
-        Row: {
-          avatar_url: string | null
-          block_lot: string | null
-          created_at: string | null
-          email: string
-          id: string
-          name: string
-          password_hash: string
-          phone: string | null
-          residence_type: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          block_lot?: string | null
-          created_at?: string | null
-          email: string
-          id?: string
-          name: string
-          password_hash: string
-          phone?: string | null
-          residence_type?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          block_lot?: string | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          password_hash?: string
-          phone?: string | null
-          residence_type?: string | null
-        }
-        Relationships: []
-      }
       vehicles: {
         Row: {
           color: string | null
