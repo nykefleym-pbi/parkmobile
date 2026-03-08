@@ -16,7 +16,7 @@ export default function BookingsScreen() {
   async function executeCancellation() {
     if (!cancelId) return;
     const bk = bookings.find(b => b.id === cancelId);
-    if (!bk || hasPaid(bk)) return;
+    if (!bk) return;
     const cd = isoDate(today());
     const update = (b: Booking) => b.id === cancelId ? { ...b, status: 'cancelled', cancelledDate: cd } : b;
     setBookings(prev => prev.map(update));
@@ -57,7 +57,7 @@ export default function BookingsScreen() {
         const fee = baseFee(bk), pen = penaltyAmt(bk), owed = totalOwed(bk), tp = totalPaid(bk), rem = remaining(bk);
         const full = isFullyPaid(bk), part = isPartiallyPaid(bk), paid = hasPaid(bk);
         const isA = bk.status === 'active', isE = bk.status === 'expired', isC = bk.status === 'cancelled';
-        const canCancel = isA && !paid;
+        const canCancel = isA;
 
         return (
           <div key={bk.id} className={`pa-bk-card pa-fu pa-d${Math.min(i + 2, 5)}`}>
@@ -119,14 +119,16 @@ export default function BookingsScreen() {
                 </div>
               )}
             </div>
+            {isC && rem > 0 && (
+              <div className="pa-penalty-warn">
+                <div style={{ fontWeight: 700, color: 'var(--pa-red)', marginBottom: 4 }}>⚠ Settlement Required</div>
+                <div style={{ color: 'var(--pa-tx2)' }}>Prorated fee of <strong style={{ color: 'var(--pa-red)' }}>{formatPeso(owed)}</strong> must still be settled. Balance: <strong style={{ color: 'var(--pa-red)' }}>{formatPeso(rem)}</strong></div>
+              </div>
+            )}
             {isA && (
               <div className="pa-bk-actions">
                 <button className="pa-bk-btn" onClick={() => setScreen('spots-view:' + bk.locName + ':' + bk.slotId)}>View Space</button>
-                {canCancel ? (
-                  <button className="pa-bk-btn danger" onClick={() => setCancelId(bk.id)}>Cancel</button>
-                ) : (
-                  <button className="pa-bk-btn" disabled style={{ opacity: .4, cursor: 'not-allowed' }}>Paid — No Cancel</button>
-                )}
+                <button className="pa-bk-btn danger" onClick={() => setCancelId(bk.id)}>Cancel</button>
               </div>
             )}
           </div>
@@ -137,11 +139,14 @@ export default function BookingsScreen() {
         <div className={`pa-modal-bg ${cancelId ? 'show' : ''}`} onClick={() => setCancelId(null)}>
           <div className="pa-modal" onClick={e => e.stopPropagation()}>
             <h3>Cancel Booking?</h3>
-            <p>Your fee will be prorated based on days occupied.</p>
+            <p>Your fee will be prorated based on days occupied. <strong>You must still settle the prorated amount.</strong></p>
             <div className="pa-fee-breakdown">
               <div className="pa-fb-row"><span>Monthly rate</span><span>{formatPeso(cancelBk.rate)}</span></div>
               <div className="pa-fb-row"><span>Days occupied</span><span>{Math.max(1, Math.ceil((today().getTime() - new Date(cancelBk.startDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24)))} of 30</span></div>
               <div className="pa-fb-row"><span>Prorated fee</span><span>{formatPeso(Math.round(Math.max(1, Math.ceil((today().getTime() - new Date(cancelBk.startDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))) / 30 * cancelBk.rate * 100) / 100)}</span></div>
+              {totalPaid(cancelBk) > 0 && (
+                <div className="pa-fb-row"><span>Already paid</span><span>{formatPeso(totalPaid(cancelBk))}</span></div>
+              )}
             </div>
             <div className="pa-modal-btns">
               <button className="pa-m-cancel" onClick={() => setCancelId(null)}>Keep Booking</button>
