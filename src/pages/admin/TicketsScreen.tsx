@@ -62,16 +62,25 @@ export default function TicketsScreen() {
     const amt = Math.round(days * bkDaily(penBk) * 100) / 100;
     const dt = isoDate(today());
 
-    if (penBk.dbId) {
-      await supabase.from('penalties').insert({
-        booking_id: penBk.dbId, overstay_days: days, amount: amt,
-        applied_date: dt, notes: penForm.notes || null,
-      });
+    const insertData = {
+      booking_id: penBk.dbId, overstay_days: days, amount: amt,
+      applied_date: dt, notes: penForm.notes || null,
+    };
+
+    const { data: res, error } = await supabase.functions.invoke('admin-action', {
+      body: { token: adminToken, action: 'insert_penalty', data: insertData },
+    });
+
+    if (error || res?.error) {
+      toast.error(res?.error || 'Failed to apply penalty');
+      return;
     }
+
     setGlobalBookings(prev => prev.map(b => b.id === penTarget ? {
       ...b, penalty: { days, amount: amt, date: dt, notes: penForm.notes }
     } : b));
     setPenTarget(null);
+    toast.success('Penalty applied');
   }
 
   return (
