@@ -1,3 +1,4 @@
+import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPeso, fmtShortMonth, today } from '@/lib/helpers';
 import { totalPaid, remaining, penaltyAmt } from '@/lib/booking-utils';
