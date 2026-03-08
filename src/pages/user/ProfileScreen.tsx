@@ -72,9 +72,11 @@ export default function ProfileScreen() {
   async function setPrimary(i: number) {
     const newCars = cars.map((c, j) => ({ ...c, primary: j === i }));
     setCars(newCars);
-    for (const c of newCars) {
-      if (c.dbId) await supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId);
-    }
+    await Promise.all(
+      newCars.filter(c => c.dbId).map(c =>
+        supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId!)
+      )
+    );
   }
 
   async function saveProfile() {
