@@ -6,7 +6,8 @@ export function bkDaily(b: Booking) { return bkRateStored(b) / 30; }
 
 export function baseFee(b: Booking) {
   if (b.status === 'cancelled' && b.cancelledDate) {
-    return Math.round((daysBetween(b.startDate, b.cancelledDate) / 30) * bkRateStored(b) * 100) / 100;
+    const days = Math.max(1, daysBetween(b.startDate, b.cancelledDate));
+    return Math.round((days / 30) * bkRateStored(b) * 100) / 100;
   }
   return bkRateStored(b);
 }

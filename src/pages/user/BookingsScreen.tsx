@@ -139,11 +139,14 @@ export default function BookingsScreen() {
         <div className={`pa-modal-bg ${cancelId ? 'show' : ''}`} onClick={() => setCancelId(null)}>
           <div className="pa-modal" onClick={e => e.stopPropagation()}>
             <h3>Cancel Booking?</h3>
-            <p>Your fee will be prorated based on days occupied.</p>
+            <p>Your fee will be prorated based on days occupied. <strong>You must still settle the prorated amount.</strong></p>
             <div className="pa-fee-breakdown">
               <div className="pa-fb-row"><span>Monthly rate</span><span>{formatPeso(cancelBk.rate)}</span></div>
               <div className="pa-fb-row"><span>Days occupied</span><span>{Math.max(1, Math.ceil((today().getTime() - new Date(cancelBk.startDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24)))} of 30</span></div>
               <div className="pa-fb-row"><span>Prorated fee</span><span>{formatPeso(Math.round(Math.max(1, Math.ceil((today().getTime() - new Date(cancelBk.startDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24))) / 30 * cancelBk.rate * 100) / 100)}</span></div>
+              {totalPaid(cancelBk) > 0 && (
+                <div className="pa-fb-row"><span>Already paid</span><span>{formatPeso(totalPaid(cancelBk))}</span></div>
+              )}
             </div>
             <div className="pa-modal-btns">
               <button className="pa-m-cancel" onClick={() => setCancelId(null)}>Keep Booking</button>
