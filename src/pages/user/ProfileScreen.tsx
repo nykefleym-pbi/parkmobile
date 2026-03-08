@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getInitials, fmtMonthYear, formatPeso } from '@/lib/helpers';
@@ -14,7 +14,7 @@ export default function ProfileScreen() {
   const [profileForm, setProfileForm] = useState({ ...profile });
   const [notificationsOn, setNotificationsOn] = useState(true);
 
-  const tp = getUserPayable();
+  const tp = useMemo(() => getUserPayable(), [bookings]);
   const rl = { Resident: 'Resident (Owner)', Renter: 'Renter', Others: 'Others' }[profile.restype] || profile.restype;
 
   function openCarModal(idx: number) {
@@ -28,7 +28,15 @@ export default function ProfileScreen() {
     const { name, plate, color, primary } = carForm;
     if (!name || !plate) { alert('Fill in car name and plate.'); return; }
     let newCars = [...cars];
-    if (primary) newCars = newCars.map(c => ({ ...c, primary: false }));
+
+    // If marking as primary, clear primary on all others (local + DB)
+    if (primary) {
+      const dbUpdates = newCars.filter(c => c.primary && c.dbId).map(c =>
+        supabase.from('vehicles').update({ is_primary: false }).eq('id', c.dbId!)
+      );
+      await Promise.all(dbUpdates);
+      newCars = newCars.map(c => ({ ...c, primary: false }));
+    }
 
     if (editCarIdx >= 0) {
       newCars[editCarIdx] = { ...newCars[editCarIdx], name, plate, color, primary };
@@ -37,11 +45,12 @@ export default function ProfileScreen() {
     } else {
       const userId = authUser?.id;
       if (!userId) return;
+      const isPrimary = primary || !newCars.length;
       const { data: res } = await supabase.from('vehicles').insert({
-        user_id: userId, name, plate, color: color || 'White', is_primary: primary || !newCars.length,
+        user_id: userId, name, plate, color: color || 'White', is_primary: isPrimary,
       }).select();
       const dbId = res && res.length ? res[0].id : null;
-      newCars.push({ name, plate, color: color || 'White', primary: primary || !newCars.length, dbId });
+      newCars.push({ name, plate, color: color || 'White', primary: isPrimary, dbId });
     }
     if (!newCars.some(c => c.primary) && newCars.length) newCars[0].primary = true;
     setCars(newCars);
@@ -63,9 +72,11 @@ export default function ProfileScreen() {
   async function setPrimary(i: number) {
     const newCars = cars.map((c, j) => ({ ...c, primary: j === i }));
     setCars(newCars);
-    for (const c of newCars) {
-      if (c.dbId) await supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId);
-    }
+    await Promise.all(
+      newCars.filter(c => c.dbId).map(c =>
+        supabase.from('vehicles').update({ is_primary: c.primary }).eq('id', c.dbId!)
+      )
+    );
   }
 
   async function saveProfile() {

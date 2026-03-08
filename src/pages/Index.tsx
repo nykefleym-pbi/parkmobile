@@ -19,8 +19,8 @@ import ReceivablesScreen from '@/pages/admin/ReceivablesScreen';
 import SettingsScreen from '@/pages/admin/SettingsScreen';
 
 function AppShell() {
-  const { screen, activeTab, isAdmin, buildLocs } = useApp();
-  const locs = buildLocs();
+  const { screen, activeTab, isAdmin, buildLocs, config } = useApp();
+  const locs = useMemo(() => buildLocs(), [config.spaces, buildLocs]);
 
   const showTabs = !['splash', 'login', 'signup', 'admin-login', 'ticket', 'help', 'forgot-password', 'complete-profile'].includes(screen)
     && !screen.startsWith('spots') && !screen.startsWith('spots-view');
