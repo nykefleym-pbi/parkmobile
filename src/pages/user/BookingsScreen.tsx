@@ -67,6 +67,7 @@ export default function BookingsScreen() {
                 {pen > 0 && <div className="pa-bk-badge" style={{ background: '#EF6C00' }}>Penalty</div>}
                 {full && <div className="pa-bk-badge paid">Paid</div>}
                 {part && <div className="pa-bk-badge partial">Partial</div>}
+                {!full && !part && rem > 0 && <div className="pa-bk-badge" style={{ background: 'var(--pa-red, #d32f2f)', color: '#fff' }}>Unpaid</div>}
                 <div className={`pa-bk-badge ${bk.status}`}>{isA ? 'Active' : isE ? 'Expired' : 'Cancelled'}</div>
               </div>
             </div>
