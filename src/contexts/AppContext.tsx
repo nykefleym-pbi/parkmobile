@@ -316,12 +316,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const contextValue = useMemo(() => ({
-    loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
     setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
     setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
     setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
-  }), [loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+  }), [loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
     buildLocs, checkExpired, getUserPayable, logout, loadUserData]);
 
