@@ -14,6 +14,7 @@ export default function ProfileScreen() {
   const [carForm, setCarForm] = useState({ name: '', plate: '', color: '', primary: false });
   const [profileForm, setProfileForm] = useState({ ...profile });
   const [notificationsOn, setNotificationsOn] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const tp = useMemo(() => getUserPayable(), [bookings]);
   const rl = { Resident: 'Resident (Owner)', Renter: 'Renter', Others: 'Others' }[profile.restype] || profile.restype;
