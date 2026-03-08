@@ -2,13 +2,21 @@ import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { applyTheme, THEMES } from '@/lib/themes';
 import { autoPrefix } from '@/lib/helpers';
-import { LogOut, Copy, RefreshCw } from 'lucide-react';
+import { LogOut, Copy, RefreshCw, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function SettingsScreen() {
   const { config, setConfig, configDbId, adminToken, adminInviteCode, setAdminInviteCode, logout } = useApp();
   const [regenerating, setRegenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Password change state
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [changingPw, setChangingPw] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
 
   async function adminAction(action: string, data: any) {
     const { data: res, error } = await supabase.functions.invoke('admin-action', {
@@ -94,6 +102,32 @@ export default function SettingsScreen() {
     }
   }
 
+  async function handleChangePassword() {
+    setPwError('');
+    setPwSuccess('');
+
+    if (!currentPw) { setPwError('Enter your current password.'); return; }
+    if (!/^\d{6,8}$/.test(newPw)) { setPwError('New password must be 6-8 digits only.'); return; }
+    if (newPw !== confirmPw) { setPwError('New passwords do not match.'); return; }
+
+    setChangingPw(true);
+    try {
+      const res = await adminAction('change_password', { current_password: currentPw, new_password: newPw });
+      if (res?.ok) {
+        setPwSuccess('Password changed successfully!');
+        setCurrentPw('');
+        setNewPw('');
+        setConfirmPw('');
+      } else {
+        setPwError(res?.error || 'Failed to change password.');
+      }
+    } catch {
+      setPwError('Server error. Please try again.');
+    } finally {
+      setChangingPw(false);
+    }
+  }
+
   return (
     <div className="pa-screen-content">
       <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
@@ -122,6 +156,39 @@ export default function SettingsScreen() {
             </button>
           </div>
           {copied && <div style={{ fontSize: 11, color: 'var(--pa-grn, #22c55e)', marginTop: 6, fontWeight: 600 }}>Copied to clipboard!</div>}
+        </div>
+
+        {/* Change Password Section */}
+        <div className="pa-slbl pa-fu pa-d1" style={{ padding: 0, marginBottom: 10 }}>Change Password</div>
+        <div className="pa-fu pa-d1" style={{ background: 'var(--pa-sf)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: 'var(--pa-tx2)', marginBottom: 12 }}>
+            <Lock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />
+            Password must be 6-8 digits only.
+          </div>
+          <div className="pa-f-group" style={{ marginBottom: 10 }}>
+            <label className="pa-f-label">Current Password</label>
+            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
+              placeholder="Enter current password" value={currentPw}
+              onChange={e => { setCurrentPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
+          </div>
+          <div className="pa-f-group" style={{ marginBottom: 10 }}>
+            <label className="pa-f-label">New Password</label>
+            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
+              placeholder="6-8 digits" value={newPw}
+              onChange={e => { setNewPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
+          </div>
+          <div className="pa-f-group" style={{ marginBottom: 12 }}>
+            <label className="pa-f-label">Confirm New Password</label>
+            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
+              placeholder="Re-enter new password" value={confirmPw}
+              onChange={e => { setConfirmPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
+          </div>
+          {pwError && <div style={{ fontSize: 11, color: 'var(--pa-red, #ef4444)', marginBottom: 8, fontWeight: 600 }}>{pwError}</div>}
+          {pwSuccess && <div style={{ fontSize: 11, color: 'var(--pa-grn, #22c55e)', marginBottom: 8, fontWeight: 600 }}>{pwSuccess}</div>}
+          <button className="pa-bbk" onClick={handleChangePassword} disabled={changingPw}
+            style={{ fontSize: 13, padding: '10px 0', width: '100%', opacity: changingPw ? 0.6 : 1 }}>
+            {changingPw ? 'Changing...' : 'Update Password'}
+          </button>
         </div>
 
         <div className="pa-slbl pa-fu pa-d1" style={{ padding: 0, marginBottom: 10 }}>App Theme</div>
