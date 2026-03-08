@@ -28,7 +28,7 @@ export default function HelpScreen() {
         <p>We're here to assist you.</p>
       </div>
       <div className="pa-help-contact pa-fu pa-d2">
-        <h4>Contact HOA Office</h4>
+        <h4>Contact Admin Office</h4>
         <p>Phone: <span>{config.hoa.phone}</span></p>
         <p>Email: <span>{config.hoa.email}</span></p>
         <p>Hours: <span>{config.hoa.hours}</span></p>
