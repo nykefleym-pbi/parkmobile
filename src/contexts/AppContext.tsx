@@ -157,6 +157,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { config: cfg, configDbId: cid } = await loadAppConfig();
       setConfig(cfg);
       setConfigDbId(cid);
+      setConfigLoaded(true);
       applyTheme(cfg.theme);
 
       // Set up auth listener BEFORE checking session
