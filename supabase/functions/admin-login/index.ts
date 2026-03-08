@@ -23,7 +23,6 @@ async function hashPasswordPbkdf2(password: string): Promise<string> {
 
 async function verifyPasswordPbkdf2(password: string, stored: string): Promise<boolean> {
   const parts = stored.split("$");
-  // $pbkdf2$iterations$salt$hash
   const iterations = parseInt(parts[2]);
   const saltHex = parts[3];
   const storedHash = parts[4];
@@ -50,13 +49,8 @@ async function verifyPasswordSha256(password: string, stored: string): Promise<b
 }
 
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  if (stored.startsWith("$pbkdf2$")) {
-    return verifyPasswordPbkdf2(password, stored);
-  }
-  if (stored.startsWith("$sha256$")) {
-    return verifyPasswordSha256(password, stored);
-  }
-  // Legacy plaintext
+  if (stored.startsWith("$pbkdf2$")) return verifyPasswordPbkdf2(password, stored);
+  if (stored.startsWith("$sha256$")) return verifyPasswordSha256(password, stored);
   return stored === password;
 }
 
@@ -121,11 +115,11 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       token,
-      admin: { id: admin.id, name: admin.name, username: admin.username },
+      admin: { id: admin.id, name: admin.name, username: admin.username, invite_code: admin.invite_code },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

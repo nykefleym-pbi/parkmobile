@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { AppConfig } from './types';
 
-export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: string | null }> {
+export async function loadAppConfig(adminId?: string | null): Promise<{ config: AppConfig; configDbId: string | null }> {
   const defaults: AppConfig = {
     subdiv: 'Camella Terra Alta', theme: 'green', logo: null,
     appName: 'CTA-ParkAssist',
@@ -13,7 +13,11 @@ export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: 
   };
 
   try {
-    const { data: cfgs } = await supabase.from('app_config').select('*').limit(1);
+    let cfgQuery = supabase.from('app_config').select('*').limit(1);
+    if (adminId) {
+      cfgQuery = supabase.from('app_config').select('*').eq('admin_id', adminId).limit(1);
+    }
+    const { data: cfgs } = await cfgQuery;
     let configDbId: string | null = null;
     if (cfgs && cfgs.length) {
       const c = cfgs[0];
@@ -22,10 +26,15 @@ export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: 
       defaults.appName = c.app_name;
       defaults.theme = c.theme;
       defaults.logo = c.logo_url;
+      defaults.adminId = (c as any).admin_id || undefined;
       defaults.hoa = { phone: c.hoa_phone || '', email: c.hoa_email || '', hours: c.hoa_hours || '' };
     }
 
-    const { data: spaces } = await supabase.from('spaces').select('*').order('sort_order');
+    let spacesQuery = supabase.from('spaces').select('*').order('sort_order');
+    if (adminId) {
+      spacesQuery = supabase.from('spaces').select('*').eq('admin_id', adminId).order('sort_order');
+    }
+    const { data: spaces } = await spacesQuery;
     if (spaces && spaces.length) {
       defaults.spaces = spaces.map(s => ({ id: s.id, name: s.name, addr: s.address, slots: s.slots, rate: +s.rate }));
     }

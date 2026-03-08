@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Booking } from '@/lib/types';
 
 export default function AdminLoginScreen() {
-  const { setIsAdmin, setActiveTab, setScreen, setAdminToken, setGlobalBookings, config } = useApp();
+  const { setIsAdmin, setActiveTab, setScreen, setAdminToken, setAdminInviteCode, setAdminId, setGlobalBookings, config, reloadConfig } = useApp();
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
@@ -16,7 +16,6 @@ export default function AdminLoginScreen() {
     setError('');
 
     try {
-      // Step 1: Authenticate admin via edge function
       const { data: loginData, error: loginErr } = await supabase.functions.invoke('admin-login', {
         body: { username: user, password: pass },
       });
@@ -27,9 +26,10 @@ export default function AdminLoginScreen() {
         return;
       }
 
-      const { token } = loginData;
+      const { token, admin } = loginData;
+      const adminId = admin.id;
 
-      // Step 2: Fetch admin data via edge function
+      // Fetch admin data via edge function
       const { data: adminData, error: dataErr } = await supabase.functions.invoke('admin-data', {
         body: { token },
       });
@@ -61,8 +61,14 @@ export default function AdminLoginScreen() {
       });
 
       setAdminToken(token);
+      setAdminId(adminId);
+      setAdminInviteCode(admin.invite_code || null);
       setGlobalBookings(globalBookings);
       setIsAdmin(true);
+
+      // Reload config scoped to this admin
+      await reloadConfig(adminId);
+
       setActiveTab('dashboard');
       setScreen('home');
     } catch {

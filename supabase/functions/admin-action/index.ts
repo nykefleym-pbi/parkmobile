@@ -56,98 +56,67 @@ Deno.serve(async (req) => {
 
     if (action === "insert_payment") {
       const { data: result, error } = await supabase.from("payments").insert(data).select().single();
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true, record: result }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, record: result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "insert_penalty") {
       const { data: result, error } = await supabase.from("penalties").insert(data).select().single();
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true, record: result }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, record: result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "update_config") {
       const { id, ...fields } = data;
-      if (!id) {
-        return new Response(JSON.stringify({ error: "Config id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!id) return new Response(JSON.stringify({ error: "Config id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Verify ownership
+      const { data: cfg } = await supabase.from("app_config").select("admin_id").eq("id", id).single();
+      if (cfg?.admin_id !== adminId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const { error } = await supabase.from("app_config").update(fields).eq("id", id);
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "update_space") {
       const { id, ...fields } = data;
-      if (!id) {
-        return new Response(JSON.stringify({ error: "Space id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!id) return new Response(JSON.stringify({ error: "Space id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Verify ownership
+      const { data: sp } = await supabase.from("spaces").select("admin_id").eq("id", id).single();
+      if (sp?.admin_id !== adminId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const { error } = await supabase.from("spaces").update(fields).eq("id", id);
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "add_space") {
-      const { data: result, error } = await supabase.from("spaces").insert(data).select().single();
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true, record: result }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Inject admin_id into the space data
+      const { data: result, error } = await supabase.from("spaces").insert({ ...data, admin_id: adminId }).select().single();
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, record: result }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "delete_space") {
       const { id } = data;
-      if (!id) {
-        return new Response(JSON.stringify({ error: "Space id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!id) return new Response(JSON.stringify({ error: "Space id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Verify ownership
+      const { data: sp } = await supabase.from("spaces").select("admin_id").eq("id", id).single();
+      if (sp?.admin_id !== adminId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const { error } = await supabase.from("spaces").delete().eq("id", id);
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "regenerate_invite_code") {
+      const newCode = Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+      const { error } = await supabase.from("admins").update({ invite_code: newCode }).eq("id", adminId);
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, invite_code: newCode }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

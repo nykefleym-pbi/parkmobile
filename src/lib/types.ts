@@ -82,6 +82,7 @@ export interface AppConfig {
   appName: string;
   hoa: { phone: string; email: string; hours: string };
   spaces: SpaceConfig[];
+  adminId?: string;
 }
 
 export interface Location {

@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { applyTheme, THEMES } from '@/lib/themes';
 import { autoPrefix } from '@/lib/helpers';
-import { LogOut } from 'lucide-react';
+import { LogOut, Copy, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function SettingsScreen() {
-  const { config, setConfig, configDbId, adminToken, logout } = useApp();
+  const { config, setConfig, configDbId, adminToken, adminInviteCode, setAdminInviteCode, logout } = useApp();
+  const [regenerating, setRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function adminAction(action: string, data: any) {
     const { data: res, error } = await supabase.functions.invoke('admin-action', {
@@ -69,11 +72,58 @@ export default function SettingsScreen() {
     r.readAsDataURL(f);
   }
 
+  async function regenerateInviteCode() {
+    setRegenerating(true);
+    try {
+      const res = await adminAction('regenerate_invite_code', {});
+      if (res?.invite_code) {
+        setAdminInviteCode(res.invite_code);
+      }
+    } catch (e) {
+      console.error('Failed to regenerate invite code:', e);
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  function copyInviteCode() {
+    if (adminInviteCode) {
+      navigator.clipboard.writeText(adminInviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
   return (
     <div className="pa-screen-content">
       <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
       <div className="pa-hdr pa-fu"><div className="pa-community">Admin</div><h1>Settings</h1></div>
       <div style={{ padding: '0 24px' }}>
+
+        {/* Invite Code Section */}
+        <div className="pa-slbl pa-fu pa-d1" style={{ padding: 0, marginBottom: 10 }}>Invite Code</div>
+        <div className="pa-fu pa-d1" style={{ background: 'var(--pa-sf)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: 'var(--pa-tx2)', marginBottom: 8 }}>Share this code with residents so they can sign up under your subdivision.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              flex: 1, background: 'var(--pa-bg)', borderRadius: 8, padding: '10px 14px',
+              fontSize: 18, fontWeight: 700, letterSpacing: 3, textAlign: 'center', fontFamily: 'monospace',
+              color: 'var(--pa-tx)'
+            }}>
+              {adminInviteCode || '—'}
+            </div>
+            <button onClick={copyInviteCode} title="Copy code"
+              style={{ background: 'var(--pa-acc)', color: '#fff', border: 'none', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <Copy size={16} />
+            </button>
+            <button onClick={regenerateInviteCode} disabled={regenerating} title="Generate new code"
+              style={{ background: 'var(--pa-bg)', color: 'var(--pa-tx)', border: '1px solid var(--pa-brd)', borderRadius: 8, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: regenerating ? 0.5 : 1 }}>
+              <RefreshCw size={16} className={regenerating ? 'animate-spin' : ''} />
+            </button>
+          </div>
+          {copied && <div style={{ fontSize: 11, color: 'var(--pa-grn, #22c55e)', marginTop: 6, fontWeight: 600 }}>Copied to clipboard!</div>}
+        </div>
+
         <div className="pa-slbl pa-fu pa-d1" style={{ padding: 0, marginBottom: 10 }}>App Theme</div>
         <div className="pa-theme-grid pa-fu pa-d1">
           {Object.entries(THEMES).map(([k, t]) => (

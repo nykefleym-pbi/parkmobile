@@ -12,10 +12,12 @@ interface AppState {
   configLoaded: boolean;
   config: AppConfig;
   configDbId: string | null;
+  adminId: string | null;
   currentUser: RegisteredUser | null;
   authUser: User | null;
   isAdmin: boolean;
   adminToken: string | null;
+  adminInviteCode: string | null;
   profile: UserProfile;
   cars: Car[];
   bookings: Booking[];
@@ -28,9 +30,11 @@ interface AppState {
   setActiveTab: (t: string) => void;
   setConfig: React.Dispatch<React.SetStateAction<AppConfig>>;
   setConfigDbId: React.Dispatch<React.SetStateAction<string | null>>;
+  setAdminId: React.Dispatch<React.SetStateAction<string | null>>;
   setCurrentUser: React.Dispatch<React.SetStateAction<RegisteredUser | null>>;
   setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
   setAdminToken: React.Dispatch<React.SetStateAction<string | null>>;
+  setAdminInviteCode: React.Dispatch<React.SetStateAction<string | null>>;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   setCars: React.Dispatch<React.SetStateAction<Car[]>>;
   setBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
@@ -42,6 +46,7 @@ interface AppState {
   getUserPayable: () => number;
   logout: () => void;
   loadUserData: (userId: string) => Promise<void>;
+  reloadConfig: (aid?: string | null) => Promise<void>;
 }
 
 const defaultProfile: UserProfile = { name: '', email: '', phone: '', blklot: '', restype: 'Resident', avatar: null, memberSince: null };
@@ -55,10 +60,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     hoa: { phone: '', email: '', hours: '' }, spaces: [],
   });
   const [configDbId, setConfigDbId] = useState<string | null>(null);
+  const [adminId, setAdminId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<RegisteredUser | null>(null);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [adminInviteCode, setAdminInviteCode] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [cars, setCars] = useState<Car[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -69,10 +76,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [screen, setScreen] = useState('splash');
   const [activeTab, setActiveTab] = useState('search');
 
+  const reloadConfig = useCallback(async (aid?: string | null) => {
+    const effectiveAdminId = aid ?? adminId;
+    const { config: cfg, configDbId: cid } = await loadAppConfig(effectiveAdminId);
+    setConfig(cfg);
+    setConfigDbId(cid);
+    setConfigLoaded(true);
+    applyTheme(cfg.theme);
+  }, [adminId]);
+
   const loadUserData = useCallback(async (userId: string) => {
     // Load profile
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (prof) {
+      const userAdminId = (prof as any).admin_id || null;
+      setAdminId(userAdminId);
       setProfile({
         name: prof.name, email: prof.email, phone: prof.phone || '',
         blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
@@ -83,6 +101,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         pass: '', blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
         avatar: prof.avatar_url, memberSince: prof.created_at, cars: [], bookings: [],
       });
+
+      // Reload config scoped to this user's admin
+      if (userAdminId) {
+        await reloadConfig(userAdminId);
+      }
     }
 
     // Load vehicles, bookings, payments, penalties in parallel
@@ -123,19 +146,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     setBookings(userBookings);
     setOccupiedSlots((occRes.data || []).map((b: any) => b.slot_id));
-  }, []);
+  }, [reloadConfig]);
 
   // Real-time subscriptions for payments, penalties, bookings
   useEffect(() => {
     if (!authUser) return;
-    const userId = authUser.id;
 
     const channel = supabase.channel('user-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments' }, (payload) => {
         const p = payload.new as any;
         setBookings(prev => prev.map(b => {
           if (b.dbId !== p.booking_id) return b;
-          // Avoid duplicates
           if (b.payments.some(pm => pm.dbId === p.id)) return b;
           return { ...b, payments: [...b.payments, { amount: +p.amount, method: p.method, date: p.transaction_date, receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id }] };
         }));
@@ -155,6 +176,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function init() {
+      // Load default config initially (will be reloaded with admin scope after login)
       const { config: cfg, configDbId: cid } = await loadAppConfig();
       setConfig(cfg);
       setConfigDbId(cid);
@@ -164,7 +186,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Set up auth listener BEFORE checking session
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-          // Block unverified email users
           if (!session.user.email_confirmed_at) {
             await supabase.auth.signOut();
             setAuthUser(null);
@@ -177,17 +198,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
             const hasProfile = prof && prof.phone && prof.block_lot;
             if (!hasProfile) {
-              // Check if metadata has the fields (email signup stores them there)
               const meta = session.user.user_metadata;
               if (meta?.phone && meta?.block_lot) {
-                // Auto-populate profile from metadata
                 await supabase.from('profiles').update({
                   phone: meta.phone,
                   block_lot: meta.block_lot,
                   residence_type: meta.residence_type || 'Resident',
                 }).eq('id', session.user.id);
 
-                // Check if vehicle already exists, if not insert from metadata
                 const { data: existingVehicles } = await supabase.from('vehicles').select('id').eq('user_id', session.user.id);
                 if ((!existingVehicles || existingVehicles.length === 0) && meta.car_name && meta.car_plate) {
                   await supabase.from('vehicles').insert({
@@ -306,6 +324,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null);
     setIsAdmin(false);
     setAdminToken(null);
+    setAdminInviteCode(null);
+    setAdminId(null);
     setBookings([]);
     setCars([]);
     setProfile(defaultProfile);
@@ -316,14 +336,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const contextValue = useMemo(() => ({
-    loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    loading, configLoaded, config, configDbId, adminId, currentUser, authUser, isAdmin, adminToken, adminInviteCode, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
-    setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
-    setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
-    setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
-  }), [loading, configLoaded, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
+    setScreen, setActiveTab, setConfig, setConfigDbId, setAdminId, setCurrentUser, setIsAdmin,
+    setAdminToken, setAdminInviteCode, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
+    setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData, reloadConfig,
+  }), [loading, configLoaded, config, configDbId, adminId, currentUser, authUser, isAdmin, adminToken, adminInviteCode, profile, cars, bookings,
     globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
-    buildLocs, checkExpired, getUserPayable, logout, loadUserData]);
+    buildLocs, checkExpired, getUserPayable, logout, loadUserData, reloadConfig]);
 
   return (
     <AppContext.Provider value={contextValue}>

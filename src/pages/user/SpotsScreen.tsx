@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config, adminId } = useApp();
   const locs = useMemo(() => buildLocs(), [config.spaces, buildLocs]);
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
@@ -42,6 +42,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
         vehicle_id: car.dbId, vehicle_name: car.name, vehicle_plate: car.plate,
         vehicle_color: car.color, rate: loc.rate, status: 'active', start_date: s, end_date: e,
         user_name: profile.name, user_email: profile.email, user_block_lot: profile.blklot,
+        admin_id: adminId,
       }).select();
 
       if (error) throw error;
