@@ -57,7 +57,7 @@ export default function BookingsScreen() {
         const fee = baseFee(bk), pen = penaltyAmt(bk), owed = totalOwed(bk), tp = totalPaid(bk), rem = remaining(bk);
         const full = isFullyPaid(bk), part = isPartiallyPaid(bk), paid = hasPaid(bk);
         const isA = bk.status === 'active', isE = bk.status === 'expired', isC = bk.status === 'cancelled';
-        const canCancel = isA && !paid;
+        const canCancel = isA;
 
         return (
           <div key={bk.id} className={`pa-bk-card pa-fu pa-d${Math.min(i + 2, 5)}`}>
