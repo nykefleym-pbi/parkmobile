@@ -1,5 +1,11 @@
 project_id = "qdwihdmhlebiyvdezoyl"
 
+[auth]
+enabled = true
+
+[auth.email]
+enable_confirmations = true
+
 [functions.admin-login]
 verify_jwt = false
 

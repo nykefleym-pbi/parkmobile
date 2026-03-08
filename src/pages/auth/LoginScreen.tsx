@@ -35,6 +35,12 @@ export default function LoginScreen() {
       }
 
       if (data.user) {
+        if (!data.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          setError('Please verify your email address before logging in. Check your inbox for the verification link.');
+          setLoading(false);
+          return;
+        }
         await loadUserData(data.user.id);
         setActiveTab('search');
         setScreen('home');
