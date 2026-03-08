@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { AppConfig, Booking, RegisteredUser, SpaceConfig, Car } from './types';
+import { AppConfig } from './types';
 
 export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: string | null }> {
   const defaults: AppConfig = {
@@ -33,57 +33,6 @@ export async function loadAppConfig(): Promise<{ config: AppConfig; configDbId: 
     return { config: defaults, configDbId };
   } catch {
     return { config: defaults, configDbId: null };
-  }
-}
-
-export async function loadAllData(): Promise<{ globalBookings: Booking[]; registeredUsers: RegisteredUser[] }> {
-  try {
-    const [bkRes, pmRes, penRes, usrRes, vehRes] = await Promise.all([
-      supabase.from('bookings').select('*'),
-      supabase.from('payments').select('*'),
-      supabase.from('penalties').select('*'),
-      supabase.from('users').select('*'),
-      supabase.from('vehicles').select('*'),
-    ]);
-
-    const bks = bkRes.data || [];
-    const pmts = pmRes.data || [];
-    const pens = penRes.data || [];
-    const users = usrRes.data || [];
-    const vehs = vehRes.data || [];
-
-    const globalBookings: Booking[] = bks.map(b => {
-      const bkPmts = pmts.filter(p => p.booking_id === b.id).map(p => ({
-        amount: +p.amount, method: p.method, date: p.transaction_date,
-        receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id,
-      }));
-      const pen = pens.find(p => p.booking_id === b.id);
-      return {
-        dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
-        startDate: b.start_date, endDate: b.end_date, status: b.status,
-        cancelledDate: b.cancelled_date, car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
-        userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
-        rate: +b.rate, userId: b.user_id, vehicleId: b.vehicle_id,
-        payments: bkPmts,
-        penalty: pen ? { days: pen.overstay_days, amount: +pen.amount, date: pen.applied_date, notes: pen.notes || '', dbId: pen.id } : null,
-      };
-    });
-
-    const registeredUsers: RegisteredUser[] = users.map(u => {
-      const uCars: Car[] = vehs.filter(v => v.user_id === u.id).map(v => ({
-        name: v.name, plate: v.plate, color: v.color || 'White', primary: v.is_primary || false, dbId: v.id,
-      }));
-      return {
-        dbId: u.id, name: u.name, email: u.email, phone: u.phone || '', pass: u.password_hash,
-        blklot: u.block_lot || '', restype: u.residence_type || 'Resident', avatar: u.avatar_url,
-        memberSince: u.created_at, cars: uCars,
-        bookings: globalBookings.filter(bk => bk.userId === u.id),
-      };
-    });
-
-    return { globalBookings, registeredUsers };
-  } catch {
-    return { globalBookings: [], registeredUsers: [] };
   }
 }
 

@@ -1,25 +1,77 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Booking, Car } from '@/lib/types';
 
 export default function LoginScreen() {
-  const { registeredUsers, globalBookings, setCurrentUser, setProfile, setCars, setBookings, setActiveTab, setScreen, config } = useApp();
+  const { setCurrentUser, setProfile, setCars, setBookings, setOccupiedSlots, setActiveTab, setScreen, config } = useApp();
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function doLogin() {
-    const user = registeredUsers.find(u => u.email === email && u.pass === pass);
-    if (!user) { setError('Invalid email or password.'); return; }
+  async function doLogin() {
+    if (!email || !pass) { setError('Please enter email and password.'); return; }
+    setLoading(true);
     setError('');
-    setCurrentUser(user);
-    setProfile({
-      name: user.name, email: user.email, phone: user.phone, blklot: user.blklot,
-      restype: user.restype, avatar: user.avatar, memberSince: user.memberSince,
-    });
-    setCars(user.cars.map(c => ({ ...c })));
-    setBookings(globalBookings.filter(b => b.userId === user.dbId));
-    setActiveTab('search');
-    setScreen('home');
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('auth-login', {
+        body: { email, password: pass },
+      });
+
+      if (fnError || data?.error) {
+        setError(data?.error || 'Login failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const { user, vehicles, bookings: bks, payments, penalties, occupiedSlots } = data;
+
+      setCurrentUser({
+        dbId: user.id, name: user.name, email: user.email, phone: user.phone || '',
+        pass: '', blklot: user.block_lot || '', restype: user.residence_type || 'Resident',
+        avatar: user.avatar_url, memberSince: user.created_at, cars: [], bookings: [],
+      });
+
+      setProfile({
+        name: user.name, email: user.email, phone: user.phone || '',
+        blklot: user.block_lot || '', restype: user.residence_type || 'Resident',
+        avatar: user.avatar_url, memberSince: user.created_at,
+      });
+
+      const uCars: Car[] = (vehicles || []).map((v: any) => ({
+        name: v.name, plate: v.plate, color: v.color || 'White',
+        primary: v.is_primary || false, dbId: v.id,
+      }));
+      setCars(uCars);
+
+      const userBookings: Booking[] = (bks || []).map((b: any) => {
+        const bkPmts = (payments || []).filter((p: any) => p.booking_id === b.id).map((p: any) => ({
+          amount: +p.amount, method: p.method, date: p.transaction_date,
+          receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id,
+        }));
+        const pen = (penalties || []).find((p: any) => p.booking_id === b.id);
+        return {
+          dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
+          startDate: b.start_date, endDate: b.end_date, status: b.status,
+          cancelledDate: b.cancelled_date,
+          car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
+          userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
+          rate: +b.rate, userId: b.user_id, vehicleId: b.vehicle_id,
+          payments: bkPmts,
+          penalty: pen ? { days: pen.overstay_days, amount: +pen.amount, date: pen.applied_date, notes: pen.notes || '', dbId: pen.id } : null,
+        };
+      });
+      setBookings(userBookings);
+      setOccupiedSlots(occupiedSlots || []);
+      setActiveTab('search');
+      setScreen('home');
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -38,7 +90,9 @@ export default function LoginScreen() {
         <label className="pa-f-label">Password</label>
         <input className="pa-f-input" type="password" placeholder="Enter password" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={e => e.key === 'Enter' && doLogin()} />
       </div>
-      <button className="pa-auth-btn" onClick={doLogin}>Log In</button>
+      <button className="pa-auth-btn" onClick={doLogin} disabled={loading}>
+        {loading ? 'Logging in...' : 'Log In'}
+      </button>
       <div className="pa-auth-link">
         Don't have an account? <a onClick={() => setScreen('signup')}>Sign Up</a>
       </div>

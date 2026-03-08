@@ -3,9 +3,10 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function SignupScreen() {
-  const { registeredUsers, setRegisteredUsers, setScreen, config } = useApp();
+  const { setScreen, config } = useApp();
   const [form, setForm] = useState({ name: '', email: '', phone: '', pass: '', blklot: '', restype: 'Resident', car: '', plate: '', color: 'White' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -13,30 +14,27 @@ export default function SignupScreen() {
     const { name, email, phone, pass, blklot, restype, car, plate, color } = form;
     if (!name || !email || !phone || !pass || !blklot || !car || !plate) { setError('Please fill in all required fields.'); return; }
     if (pass.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (registeredUsers.find(u => u.email === email)) { setError('Email already registered.'); return; }
 
-    let uid: string | null = null;
-    let carDbId: string | null = null;
-    try {
-      const { data: uRes } = await supabase.from('users').insert({
-        email, password_hash: pass, name, phone, block_lot: blklot, residence_type: restype,
-      }).select();
-      if (uRes && uRes.length) {
-        uid = uRes[0].id;
-        const { data: vRes } = await supabase.from('vehicles').insert({
-          user_id: uid, name: car, plate, color: color || 'White', is_primary: true,
-        }).select();
-        if (vRes && vRes.length) carDbId = vRes[0].id;
-      }
-    } catch { /* offline */ }
-
-    const uCars = [{ name: car, plate, color: color || 'White', primary: true, dbId: carDbId }];
-    setRegisteredUsers(prev => [...prev, {
-      dbId: uid, name, email, phone, pass, blklot, restype, cars: uCars, avatar: null,
-      memberSince: new Date().toISOString(), bookings: [],
-    }]);
+    setLoading(true);
     setError('');
-    setScreen('login');
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('auth-signup', {
+        body: { name, email, phone, password: pass, blklot, restype, car, plate, color },
+      });
+
+      if (fnError || data?.error) {
+        setError(data?.error || 'Signup failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      setScreen('login');
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -67,7 +65,9 @@ export default function SignupScreen() {
         <div className="pa-f-group"><label className="pa-f-label">Plate Number</label><input className="pa-f-input" placeholder="e.g. NCR 1234" value={form.plate} onChange={e => set('plate', e.target.value)} /></div>
         <div className="pa-f-group"><label className="pa-f-label">Color</label><input className="pa-f-input" placeholder="e.g. White" value={form.color} onChange={e => set('color', e.target.value)} /></div>
       </div>
-      <button className="pa-auth-btn" onClick={doSignup}>Create Account</button>
+      <button className="pa-auth-btn" onClick={doSignup} disabled={loading}>
+        {loading ? 'Creating Account...' : 'Create Account'}
+      </button>
       <div className="pa-auth-link" style={{ marginBottom: 20 }}>
         Already have an account? <a onClick={() => setScreen('login')}>Log In</a>
       </div>
