@@ -30,6 +30,8 @@ function AppShell() {
     if (screen === 'login') return <LoginScreen />;
     if (screen === 'signup') return <SignupScreen />;
     if (screen === 'admin-login') return <AdminLoginScreen />;
+    if (screen === 'forgot-password') return <ForgotPasswordScreen />;
+    if (screen === 'complete-profile') return <CompleteProfileScreen />;
     if (screen === 'ticket') return <TicketScreen />;
     if (screen === 'help') return <HelpScreen />;
 
