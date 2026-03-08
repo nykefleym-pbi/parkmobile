@@ -216,7 +216,7 @@ export default function ProfileScreen() {
             </label>
             <div className="pa-modal-btns">
               <button className="pa-m-cancel" onClick={() => setShowCarModal(false)}>Cancel</button>
-              <button className="pa-m-confirm" style={{ background: 'var(--pa-acc)' }} onClick={saveCar}>Save Vehicle</button>
+              <button className="pa-m-confirm" style={{ background: 'var(--pa-acc)', opacity: saving ? 0.6 : 1 }} onClick={saveCar} disabled={saving}>{saving ? 'Saving...' : 'Save Vehicle'}</button>
             </div>
           </div>
         </div>

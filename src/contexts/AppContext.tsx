@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { AppConfig, Booking, Car, RegisteredUser, UserProfile, Location } from '@/lib/types';
 import { loadAppConfig } from '@/lib/supabase-data';
 import { applyTheme } from '@/lib/themes';
