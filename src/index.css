@@ -166,6 +166,8 @@ body {
 .pa-auth-btn:active { transform: scale(.98); }
 .pa-auth-btn.outline { background: transparent; color: var(--pa-tx); border: 1.5px solid var(--pa-brd); margin-top: 12px; }
 .pa-auth-btn.outline:hover { border-color: var(--pa-acc); }
+.pa-auth-btn.google { background: #fff; color: var(--pa-tx); border: 1.5px solid var(--pa-brd); display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 0; }
+.pa-auth-btn.google:hover { border-color: #4285F4; background: #f8faff; }
 .pa-auth-link { text-align: center; margin-top: 20px; font-size: 14px; color: var(--pa-tx2); }
 .pa-auth-link a { color: var(--pa-acc); font-weight: 600; cursor: pointer; text-decoration: none; }
 .pa-auth-error { background: var(--pa-red-s); color: var(--pa-red); font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: var(--pa-rs); margin-bottom: 16px; }
