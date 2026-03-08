@@ -1,27 +1,75 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Booking } from '@/lib/types';
 
 export default function AdminLoginScreen() {
-  const { setIsAdmin, setActiveTab, setScreen } = useApp();
+  const { setIsAdmin, setActiveTab, setScreen, setAdminToken, setGlobalBookings } = useApp();
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function doAdminLogin() {
-    let valid = false;
-    try {
-      const { data } = await supabase.from('admins').select('*').eq('username', user).eq('password_hash', pass);
-      valid = !!(data && data.length > 0);
-    } catch {
-      const fallback = [{ user: 'admin', pass: 'admin123' }, { user: 'manager', pass: 'manager123' }];
-      valid = fallback.some(a => a.user === user && a.pass === pass);
-    }
-    if (!valid) { setError('Invalid admin credentials.'); return; }
+    if (!user || !pass) { setError('Please enter username and password.'); return; }
+    setLoading(true);
     setError('');
-    setIsAdmin(true);
-    setActiveTab('dashboard');
-    setScreen('home');
+
+    try {
+      // Step 1: Authenticate admin via edge function
+      const { data: loginData, error: loginErr } = await supabase.functions.invoke('admin-login', {
+        body: { username: user, password: pass },
+      });
+
+      if (loginErr || loginData?.error) {
+        setError(loginData?.error || 'Invalid admin credentials.');
+        setLoading(false);
+        return;
+      }
+
+      const { token } = loginData;
+
+      // Step 2: Fetch admin data via edge function
+      const { data: adminData, error: dataErr } = await supabase.functions.invoke('admin-data', {
+        body: { token },
+      });
+
+      if (dataErr || adminData?.error) {
+        setError('Failed to load admin data.');
+        setLoading(false);
+        return;
+      }
+
+      // Process bookings with payments and penalties
+      const { bookings: bks, payments: pmts, penalties: pens } = adminData;
+      const globalBookings: Booking[] = (bks || []).map((b: any) => {
+        const bkPmts = (pmts || []).filter((p: any) => p.booking_id === b.id).map((p: any) => ({
+          amount: +p.amount, method: p.method, date: p.transaction_date,
+          receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id,
+        }));
+        const pen = (pens || []).find((p: any) => p.booking_id === b.id);
+        return {
+          dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
+          startDate: b.start_date, endDate: b.end_date, status: b.status,
+          cancelledDate: b.cancelled_date,
+          car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
+          userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
+          rate: +b.rate, userId: b.user_id, vehicleId: b.vehicle_id,
+          payments: bkPmts,
+          penalty: pen ? { days: pen.overstay_days, amount: +pen.amount, date: pen.applied_date, notes: pen.notes || '', dbId: pen.id } : null,
+        };
+      });
+
+      setAdminToken(token);
+      setGlobalBookings(globalBookings);
+      setIsAdmin(true);
+      setActiveTab('dashboard');
+      setScreen('home');
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -34,7 +82,9 @@ export default function AdminLoginScreen() {
       {error && <div className="pa-auth-error">{error}</div>}
       <div className="pa-f-group"><label className="pa-f-label">Admin Username</label><input className="pa-f-input" placeholder="Username" value={user} onChange={e => setUser(e.target.value)} /></div>
       <div className="pa-f-group"><label className="pa-f-label">Password</label><input className="pa-f-input" type="password" placeholder="Password" value={pass} onChange={e => setPass(e.target.value)} onKeyDown={e => e.key === 'Enter' && doAdminLogin()} /></div>
-      <button className="pa-auth-btn" onClick={doAdminLogin}>Admin Login</button>
+      <button className="pa-auth-btn" onClick={doAdminLogin} disabled={loading}>
+        {loading ? 'Logging in...' : 'Admin Login'}
+      </button>
       <div className="pa-auth-link"><a onClick={() => setScreen('login')}>← Back to User Login</a></div>
     </div>
   );

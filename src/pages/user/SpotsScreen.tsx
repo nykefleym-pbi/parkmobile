@@ -7,7 +7,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, globalBookings, bookings, cars, profile, currentUser, setBookings, setGlobalBookings, setScreen } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, currentUser, setBookings, setScreen } = useApp();
   const locs = buildLocs();
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState<any>(null);
 
-  const bookedIds = useMemo(() => globalBookings.filter(b => b.status === 'active').map(b => b.slotId), [globalBookings]);
+  const bookedIds = occupiedSlots;
   const myIds = useMemo(() => bookings.filter(b => b.status === 'active').map(b => b.slotId), [bookings]);
   const bookedPlates = useMemo(() => bookings.filter(b => b.status === 'active').map(b => b.car.plate), [bookings]);
   const availCars = useMemo(() => cars.filter(c => !bookedPlates.includes(c.plate)), [cars, bookedPlates]);
@@ -44,7 +44,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
       rate: loc.rate, userId: currentUser.dbId!, payments: [], penalty: null,
     };
     setBookings(prev => [...prev, bk]);
-    setGlobalBookings(prev => [...prev, bk]);
+    setOccupiedSlots(prev => [...prev, selectedSpot]);
     setBooking(bk);
     setTimeout(() => setScreen('ticket'), 1100);
   }

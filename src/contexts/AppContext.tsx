@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AppConfig, Booking, Car, RegisteredUser, UserProfile, Location } from '@/lib/types';
-import { loadAppConfig, loadAllData } from '@/lib/supabase-data';
+import { loadAppConfig } from '@/lib/supabase-data';
 import { applyTheme } from '@/lib/themes';
-import { autoPrefix, today, isoDate } from '@/lib/helpers';
-import { remaining, totalPaid, hasPaid, coverageEndDate } from '@/lib/booking-utils';
+import { autoPrefix, today } from '@/lib/helpers';
+import { remaining, hasPaid, coverageEndDate } from '@/lib/booking-utils';
 
 interface AppState {
   loading: boolean;
@@ -11,11 +11,13 @@ interface AppState {
   configDbId: string | null;
   currentUser: RegisteredUser | null;
   isAdmin: boolean;
+  adminToken: string | null;
   profile: UserProfile;
   cars: Car[];
   bookings: Booking[];
   globalBookings: Booking[];
   registeredUsers: RegisteredUser[];
+  occupiedSlots: string[];
   screen: string;
   activeTab: string;
   setScreen: (s: string) => void;
@@ -24,11 +26,13 @@ interface AppState {
   setConfigDbId: React.Dispatch<React.SetStateAction<string | null>>;
   setCurrentUser: React.Dispatch<React.SetStateAction<RegisteredUser | null>>;
   setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
+  setAdminToken: React.Dispatch<React.SetStateAction<string | null>>;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   setCars: React.Dispatch<React.SetStateAction<Car[]>>;
   setBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
   setGlobalBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
   setRegisteredUsers: React.Dispatch<React.SetStateAction<RegisteredUser[]>>;
+  setOccupiedSlots: React.Dispatch<React.SetStateAction<string[]>>;
   buildLocs: () => Location[];
   checkExpired: () => void;
   getUserPayable: () => number;
@@ -48,22 +52,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [configDbId, setConfigDbId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<RegisteredUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminToken, setAdminToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [cars, setCars] = useState<Car[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [globalBookings, setGlobalBookings] = useState<Booking[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
   const [screen, setScreen] = useState('splash');
   const [activeTab, setActiveTab] = useState('search');
 
   useEffect(() => {
     async function init() {
       const { config: cfg, configDbId: cid } = await loadAppConfig();
-      const { globalBookings: gb, registeredUsers: ru } = await loadAllData();
       setConfig(cfg);
       setConfigDbId(cid);
-      setGlobalBookings(gb);
-      setRegisteredUsers(ru);
       applyTheme(cfg.theme);
       setLoading(false);
       setTimeout(() => setScreen('login'), 1800);
@@ -100,20 +103,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setCurrentUser(null);
     setIsAdmin(false);
+    setAdminToken(null);
     setBookings([]);
     setCars([]);
     setProfile(defaultProfile);
+    setGlobalBookings([]);
+    setOccupiedSlots([]);
     setScreen('login');
     setActiveTab('search');
   }, []);
 
   return (
     <AppContext.Provider value={{
-      loading, config, configDbId, currentUser, isAdmin, profile, cars, bookings,
-      globalBookings, registeredUsers, screen, activeTab,
+      loading, config, configDbId, currentUser, isAdmin, adminToken, profile, cars, bookings,
+      globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
       setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
-      setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
-      buildLocs, checkExpired, getUserPayable, logout,
+      setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
+      setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout,
     }}>
       {children}
     </AppContext.Provider>
