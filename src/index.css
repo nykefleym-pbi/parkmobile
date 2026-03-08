@@ -153,6 +153,7 @@ body {
 
 /* Auth */
 .pa-auth-screen { display: flex; flex-direction: column; padding: 0 32px; padding-top: 100px; overflow-y: auto; height: 100%; }
+.pa-auth-logo-area { margin-bottom: 20px; }
 .pa-auth-header { margin-bottom: 32px; }
 .pa-auth-header h1 { font-size: 28px; font-weight: 500; letter-spacing: -.6px; line-height: 1.2; }
 .pa-auth-header p { color: var(--pa-tx2); font-size: 14px; margin-top: 6px; }
