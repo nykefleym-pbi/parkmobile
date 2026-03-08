@@ -16,7 +16,7 @@ export default function BookingsScreen() {
   async function executeCancellation() {
     if (!cancelId) return;
     const bk = bookings.find(b => b.id === cancelId);
-    if (!bk || hasPaid(bk)) return;
+    if (!bk) return;
     const cd = isoDate(today());
     const update = (b: Booking) => b.id === cancelId ? { ...b, status: 'cancelled', cancelledDate: cd } : b;
     setBookings(prev => prev.map(update));
