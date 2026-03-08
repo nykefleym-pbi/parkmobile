@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
-import { addDays } from '@/lib/helpers';
 import { LogOut } from 'lucide-react';
 import { Booking } from '@/lib/types';
 
@@ -11,8 +10,8 @@ export default function BookingsScreen() {
   const { config, bookings, setBookings, setOccupiedSlots, checkExpired, getUserPayable, logout, setScreen } = useApp();
   const [cancelId, setCancelId] = useState<string | null>(null);
 
-  checkExpired();
-  const userBal = getUserPayable();
+  useEffect(() => { checkExpired(); }, [checkExpired]);
+  const userBal = useMemo(() => getUserPayable(), [getUserPayable]);
 
   async function executeCancellation() {
     if (!cancelId) return;
