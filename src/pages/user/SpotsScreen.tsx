@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config, adminId } = useApp();
   const locs = useMemo(() => buildLocs(), [config.spaces, buildLocs]);
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
