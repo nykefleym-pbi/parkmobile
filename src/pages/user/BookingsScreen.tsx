@@ -8,7 +8,7 @@ import { LogOut } from 'lucide-react';
 import { Booking } from '@/lib/types';
 
 export default function BookingsScreen() {
-  const { config, bookings, setBookings, setGlobalBookings, checkExpired, getUserPayable, logout, setScreen } = useApp();
+  const { config, bookings, setBookings, setOccupiedSlots, checkExpired, getUserPayable, logout, setScreen } = useApp();
   const [cancelId, setCancelId] = useState<string | null>(null);
 
   checkExpired();
