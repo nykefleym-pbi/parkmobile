@@ -62,7 +62,16 @@ export default function SignupScreen() {
   if (success) {
     return (
       <div className="pa-auth-screen">
-        <div className="pa-auth-header">
+      <div className="pa-auth-logo-area">
+        {config.logo ? (
+          <img src={config.logo} style={{ width: 56, height: 56, objectFit: 'contain', borderRadius: 14 }} alt="Logo" />
+        ) : (
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--pa-acc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 36 36" fill="none" width={30} height={30}><rect x="6" y="14" width="24" height="16" rx="3" stroke="#fff" strokeWidth="2.5" /><path d="M10 14V10a8 8 0 0116 0v4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" /><circle cx="18" cy="22" r="2.5" fill="#fff" /></svg>
+          </div>
+        )}
+      </div>
+      <div className="pa-auth-header">
           <div className="pa-community">{config.subdiv}</div>
           <h1>Verify your <span className="pa-serif">email</span></h1>
           <p>We've sent a verification link to <strong>{form.email}</strong>. Please check your inbox and click the link to activate your account.</p>
@@ -74,6 +83,15 @@ export default function SignupScreen() {
 
   return (
     <div className="pa-auth-screen" style={{ paddingTop: 70, paddingBottom: 40 }}>
+      <div className="pa-auth-logo-area">
+        {config.logo ? (
+          <img src={config.logo} style={{ width: 56, height: 56, objectFit: 'contain', borderRadius: 14 }} alt="Logo" />
+        ) : (
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--pa-acc)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 36 36" fill="none" width={30} height={30}><rect x="6" y="14" width="24" height="16" rx="3" stroke="#fff" strokeWidth="2.5" /><path d="M10 14V10a8 8 0 0116 0v4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" /><circle cx="18" cy="22" r="2.5" fill="#fff" /></svg>
+          </div>
+        )}
+      </div>
       <div className="pa-auth-header">
         <div className="pa-community">{config.subdiv}</div>
         <h1>Create <span className="pa-serif">account</span></h1>
