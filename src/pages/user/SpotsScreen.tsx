@@ -7,7 +7,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, globalBookings, bookings, cars, profile, currentUser, setBookings, setGlobalBookings, setScreen } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, currentUser, setBookings, setScreen } = useApp();
   const locs = buildLocs();
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
