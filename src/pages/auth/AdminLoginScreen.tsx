@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Booking } from '@/lib/types';
 
 export default function AdminLoginScreen() {
-  const { setIsAdmin, setActiveTab, setScreen, setAdminToken, setGlobalBookings } = useApp();
+  const { setIsAdmin, setActiveTab, setScreen, setAdminToken, setGlobalBookings, config } = useApp();
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
