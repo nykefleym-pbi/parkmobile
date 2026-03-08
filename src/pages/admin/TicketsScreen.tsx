@@ -7,7 +7,7 @@ import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TicketsScreen() {
-  const { globalBookings, setGlobalBookings, checkExpired, logout } = useApp();
+  const { globalBookings, setGlobalBookings, checkExpired, logout, adminToken } = useApp();
   const [filter, setFilter] = useState('all');
   const [payTarget, setPayTarget] = useState<string | null>(null);
   const [penTarget, setPenTarget] = useState<string | null>(null);
