@@ -109,7 +109,7 @@ export default function SettingsScreen() {
         <div className="pa-f-group pa-fu pa-d2"><label className="pa-f-label">App Name (Splash)</label><input className="pa-f-input" value={config.appName} onChange={e => updateConfig({ appName: e.target.value })} /></div>
         <div className="pa-f-group pa-fu pa-d2"><label className="pa-f-label">Subdivision Name</label><input className="pa-f-input" value={config.subdiv} onChange={e => updateConfig({ subdiv: e.target.value })} /></div>
 
-        <div className="pa-slbl pa-fu pa-d3" style={{ padding: 0, marginBottom: 10, marginTop: 20 }}>HOA Contact Details</div>
+        <div className="pa-slbl pa-fu pa-d3" style={{ padding: 0, marginBottom: 10, marginTop: 20 }}>Admin Contact Details</div>
         <div className="pa-f-group pa-fu pa-d3"><label className="pa-f-label">Phone</label><input className="pa-f-input" value={config.hoa.phone} onChange={e => updateConfig({ hoa: { ...config.hoa, phone: e.target.value } })} /></div>
         <div className="pa-f-group pa-fu pa-d3"><label className="pa-f-label">Email</label><input className="pa-f-input" value={config.hoa.email} onChange={e => updateConfig({ hoa: { ...config.hoa, email: e.target.value } })} /></div>
         <div className="pa-f-group pa-fu pa-d3"><label className="pa-f-label">Hours</label><input className="pa-f-input" value={config.hoa.hours} onChange={e => updateConfig({ hoa: { ...config.hoa, hours: e.target.value } })} /></div>

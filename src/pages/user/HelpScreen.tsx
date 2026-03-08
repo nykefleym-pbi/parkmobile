@@ -10,8 +10,8 @@ export default function HelpScreen() {
     { q: "How do I reserve a parking slot?", a: "Navigate to the Search tab and select your preferred parking space. Tap on any available slot, choose the vehicle you would like to assign, and confirm your reservation." },
     { q: "What is the monthly parking fee?", a: "The monthly parking fee varies per space and is displayed on each parking area's detail page. The fee covers a 30-day period." },
     { q: "Can I cancel my booking after paying?", a: "Once a payment has been recorded, your booking can no longer be cancelled. Your slot will remain reserved until the paid amount is fully consumed." },
-    { q: "What happens if my vehicle overstays?", a: "If your vehicle remains parked beyond the end of your reserved period, the HOA may apply an overstay penalty calculated at the prorated daily rate." },
-    { q: "How will I know if my payment has been processed?", a: "Once the HOA office records your payment, a digital receipt will appear on your booking card in the Bookings tab." },
+    { q: "What happens if my vehicle overstays?", a: "If your vehicle remains parked beyond the end of your reserved period, the admin may apply an overstay penalty calculated at the prorated daily rate." },
+    { q: "How will I know if my payment has been processed?", a: "Once the admin office records your payment, a digital receipt will appear on your booking card in the Bookings tab." },
     { q: "Who is eligible to use this parking service?", a: `This parking service is available exclusively to verified residents, renters, and authorized individuals within ${config.subdiv}.` },
   ];
 
