@@ -5,6 +5,8 @@ import BottomTabBar from '@/components/BottomTabBar';
 import LoginScreen from '@/pages/auth/LoginScreen';
 import SignupScreen from '@/pages/auth/SignupScreen';
 import AdminLoginScreen from '@/pages/auth/AdminLoginScreen';
+import ForgotPasswordScreen from '@/pages/auth/ForgotPasswordScreen';
+import CompleteProfileScreen from '@/pages/auth/CompleteProfileScreen';
 import HomeScreen from '@/pages/user/HomeScreen';
 import SpotsScreen from '@/pages/user/SpotsScreen';
 import TicketScreen from '@/pages/user/TicketScreen';
