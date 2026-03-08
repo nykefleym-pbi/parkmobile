@@ -6,7 +6,7 @@ import { getCarColor } from '@/lib/themes';
 import { LogOut, Pencil, ChevronRight } from 'lucide-react';
 
 export default function ProfileScreen() {
-  const { config, profile, setProfile, cars, setCars, bookings, currentUser, getUserPayable, logout, setScreen } = useApp();
+  const { config, profile, setProfile, cars, setCars, bookings, authUser, getUserPayable, logout, setScreen } = useApp();
   const [showCarModal, setShowCarModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [editCarIdx, setEditCarIdx] = useState(-1);
@@ -35,8 +35,10 @@ export default function ProfileScreen() {
       const c = newCars[editCarIdx];
       if (c.dbId) await supabase.from('vehicles').update({ name, plate, color, is_primary: primary }).eq('id', c.dbId);
     } else {
+      const userId = authUser?.id;
+      if (!userId) return;
       const { data: res } = await supabase.from('vehicles').insert({
-        user_id: currentUser!.dbId!, name, plate, color: color || 'White', is_primary: primary || !newCars.length,
+        user_id: userId, name, plate, color: color || 'White', is_primary: primary || !newCars.length,
       }).select();
       const dbId = res && res.length ? res[0].id : null;
       newCars.push({ name, plate, color: color || 'White', primary: primary || !newCars.length, dbId });
@@ -68,11 +70,12 @@ export default function ProfileScreen() {
 
   async function saveProfile() {
     setProfile(profileForm);
-    if (currentUser?.dbId) {
-      await supabase.from('users').update({
+    const userId = authUser?.id;
+    if (userId) {
+      await supabase.from('profiles').update({
         name: profileForm.name, email: profileForm.email, phone: profileForm.phone,
         block_lot: profileForm.blklot, residence_type: profileForm.restype, avatar_url: profileForm.avatar,
-      }).eq('id', currentUser.dbId);
+      }).eq('id', userId);
     }
     setShowProfileModal(false);
   }

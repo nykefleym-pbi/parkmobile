@@ -7,6 +7,7 @@ export default function SignupScreen() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', pass: '', blklot: '', restype: 'Resident', car: '', plate: '', color: 'White' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
@@ -19,22 +20,59 @@ export default function SignupScreen() {
     setError('');
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('auth-signup', {
-        body: { name, email, phone, password: pass, blklot, restype, car, plate, color },
+      // Sign up with Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: { name },
+          emailRedirectTo: window.location.origin,
+        },
       });
 
-      if (fnError || data?.error) {
-        setError(data?.error || 'Signup failed. Please try again.');
+      if (authError) {
+        setError(authError.message);
         setLoading(false);
         return;
       }
 
-      setScreen('login');
+      if (!data.user) {
+        setError('Signup failed. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const userId = data.user.id;
+
+      // Update profile with additional details
+      await supabase.from('profiles').update({
+        phone, block_lot: blklot, residence_type: restype,
+      }).eq('id', userId);
+
+      // Insert primary vehicle
+      await supabase.from('vehicles').insert({
+        user_id: userId, name: car, plate, color: color || 'White', is_primary: true,
+      });
+
+      setSuccess(true);
+      setTimeout(() => setScreen('login'), 1500);
     } catch {
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="pa-auth-screen">
+        <div className="pa-auth-header">
+          <div className="pa-community">{config.subdiv}</div>
+          <h1>Account <span className="pa-serif">created!</span></h1>
+          <p>You can now log in with your credentials.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

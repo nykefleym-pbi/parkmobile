@@ -248,6 +248,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          block_lot: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          residence_type: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          block_lot?: string | null
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          phone?: string | null
+          residence_type?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          block_lot?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          residence_type?: string | null
+        }
+        Relationships: []
+      }
       spaces: {
         Row: {
           address: string
