@@ -158,9 +158,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setAuthUser(session.user);
         await loadUserData(session.user.id);
+        // Check if profile is incomplete
+        const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
         setLoading(false);
-        setActiveTab('search');
-        setScreen('home');
+        if (prof && (!prof.phone || !prof.block_lot)) {
+          setScreen('complete-profile');
+        } else {
+          setActiveTab('search');
+          setScreen('home');
+        }
       } else {
         setLoading(false);
         setTimeout(() => setScreen('login'), 1800);
