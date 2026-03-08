@@ -1,5 +1,6 @@
 import { useApp } from '@/contexts/AppContext';
-import { fmtDate } from '@/lib/helpers';
+import { fmtDate, formatPeso } from '@/lib/helpers';
+import { baseFee, remaining, isFullyPaid } from '@/lib/booking-utils';
 import { Check } from 'lucide-react';
 
 export default function TicketScreen() {
