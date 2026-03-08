@@ -7,7 +7,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, currentUser, setBookings, setScreen } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen } = useApp();
   const locs = buildLocs();
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
@@ -23,14 +23,14 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
   if (!loc) return null;
 
   async function confirmBooking() {
-    if (!selectedSpot || !availCars.length || !currentUser) return;
+    if (!selectedSpot || !availCars.length || !authUser) return;
     setConfirmed(true);
     const s = isoDate(today()), e = isoDate(addDays(today(), 30));
     const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
     const code = 'BK-' + Date.now();
 
     const { data: res } = await supabase.from('bookings').insert({
-      booking_code: code, user_id: currentUser.dbId!, space_name: loc.name, slot_id: selectedSpot,
+      booking_code: code, user_id: authUser.id, space_name: loc.name, slot_id: selectedSpot,
       vehicle_id: car.dbId || undefined, vehicle_name: car.name, vehicle_plate: car.plate,
       vehicle_color: car.color, rate: loc.rate, status: 'active', start_date: s, end_date: e,
       user_name: profile.name, user_email: profile.email, user_block_lot: profile.blklot,
@@ -41,7 +41,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
       dbId, id: code, slotId: selectedSpot, locName: loc.name, startDate: s, endDate: e,
       status: 'active', cancelledDate: null, car: { name: car.name, plate: car.plate, color: car.color },
       userName: profile.name, userEmail: profile.email, userBlklot: profile.blklot,
-      rate: loc.rate, userId: currentUser.dbId!, payments: [], penalty: null,
+      rate: loc.rate, userId: authUser.id, payments: [], penalty: null,
     };
     setBookings(prev => [...prev, bk]);
     setOccupiedSlots(prev => [...prev, selectedSpot]);

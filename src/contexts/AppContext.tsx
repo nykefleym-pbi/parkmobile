@@ -4,12 +4,15 @@ import { loadAppConfig } from '@/lib/supabase-data';
 import { applyTheme } from '@/lib/themes';
 import { autoPrefix, today } from '@/lib/helpers';
 import { remaining, hasPaid, coverageEndDate } from '@/lib/booking-utils';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AppState {
   loading: boolean;
   config: AppConfig;
   configDbId: string | null;
   currentUser: RegisteredUser | null;
+  authUser: User | null;
   isAdmin: boolean;
   adminToken: string | null;
   profile: UserProfile;
@@ -37,6 +40,7 @@ interface AppState {
   checkExpired: () => void;
   getUserPayable: () => number;
   logout: () => void;
+  loadUserData: (userId: string) => Promise<void>;
 }
 
 const defaultProfile: UserProfile = { name: '', email: '', phone: '', blklot: '', restype: 'Resident', avatar: null, memberSince: null };
@@ -51,6 +55,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [configDbId, setConfigDbId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<RegisteredUser | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
@@ -62,14 +67,100 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [screen, setScreen] = useState('splash');
   const [activeTab, setActiveTab] = useState('search');
 
+  const loadUserData = useCallback(async (userId: string) => {
+    // Load profile
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (prof) {
+      setProfile({
+        name: prof.name, email: prof.email, phone: prof.phone || '',
+        blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
+        avatar: prof.avatar_url, memberSince: prof.created_at,
+      });
+      setCurrentUser({
+        dbId: userId, name: prof.name, email: prof.email, phone: prof.phone || '',
+        pass: '', blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
+        avatar: prof.avatar_url, memberSince: prof.created_at, cars: [], bookings: [],
+      });
+    }
+
+    // Load vehicles, bookings, payments, penalties in parallel
+    const [vehRes, bkRes, pmRes, penRes, occRes] = await Promise.all([
+      supabase.from('vehicles').select('*').eq('user_id', userId),
+      supabase.from('bookings').select('*').eq('user_id', userId),
+      supabase.from('payments').select('*'),
+      supabase.from('penalties').select('*'),
+      supabase.from('bookings').select('slot_id').eq('status', 'active'),
+    ]);
+
+    const uCars: Car[] = (vehRes.data || []).map((v: any) => ({
+      name: v.name, plate: v.plate, color: v.color || 'White',
+      primary: v.is_primary || false, dbId: v.id,
+    }));
+    setCars(uCars);
+
+    const bookingIds = (bkRes.data || []).map((b: any) => b.id);
+    const payments = (pmRes.data || []).filter((p: any) => bookingIds.includes(p.booking_id));
+    const penalties = (penRes.data || []).filter((p: any) => bookingIds.includes(p.booking_id));
+
+    const userBookings: Booking[] = (bkRes.data || []).map((b: any) => {
+      const bkPmts = payments.filter((p: any) => p.booking_id === b.id).map((p: any) => ({
+        amount: +p.amount, method: p.method, date: p.transaction_date,
+        receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id,
+      }));
+      const pen = penalties.find((p: any) => p.booking_id === b.id);
+      return {
+        dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
+        startDate: b.start_date, endDate: b.end_date, status: b.status,
+        cancelledDate: b.cancelled_date,
+        car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
+        userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
+        rate: +b.rate, userId: b.user_id, vehicleId: b.vehicle_id,
+        payments: bkPmts,
+        penalty: pen ? { days: pen.overstay_days, amount: +pen.amount, date: pen.applied_date, notes: pen.notes || '', dbId: pen.id } : null,
+      };
+    });
+    setBookings(userBookings);
+    setOccupiedSlots((occRes.data || []).map((b: any) => b.slot_id));
+  }, []);
+
   useEffect(() => {
     async function init() {
       const { config: cfg, configDbId: cid } = await loadAppConfig();
       setConfig(cfg);
       setConfigDbId(cid);
       applyTheme(cfg.theme);
-      setLoading(false);
-      setTimeout(() => setScreen('login'), 1800);
+
+      // Set up auth listener BEFORE checking session
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          setAuthUser(session.user);
+          if (screen === 'splash' || screen === 'login' || screen === 'signup') {
+            await loadUserData(session.user.id);
+            setActiveTab('search');
+            setScreen('home');
+          }
+        } else {
+          setAuthUser(null);
+          if (!isAdmin) {
+            setScreen('login');
+          }
+        }
+      });
+
+      // Check existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setAuthUser(session.user);
+        await loadUserData(session.user.id);
+        setLoading(false);
+        setActiveTab('search');
+        setScreen('home');
+      } else {
+        setLoading(false);
+        setTimeout(() => setScreen('login'), 1800);
+      }
+
+      return () => subscription.unsubscribe();
     }
     init();
   }, []);
@@ -100,7 +191,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       (b.status === 'active' || b.status === 'expired' || b.status === 'cancelled') ? s + remaining(b) : s, 0);
   }, [bookings]);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAuthUser(null);
     setCurrentUser(null);
     setIsAdmin(false);
     setAdminToken(null);
@@ -115,11 +208,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      loading, config, configDbId, currentUser, isAdmin, adminToken, profile, cars, bookings,
+      loading, config, configDbId, currentUser, authUser, isAdmin, adminToken, profile, cars, bookings,
       globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
       setScreen, setActiveTab, setConfig, setConfigDbId, setCurrentUser, setIsAdmin,
       setAdminToken, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
-      setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout,
+      setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData,
     }}>
       {children}
     </AppContext.Provider>
