@@ -9,6 +9,10 @@ export function baseFee(b: Booking) {
     const days = Math.max(1, daysBetween(b.startDate, b.cancelledDate));
     return Math.round((days / 30) * bkRateStored(b) * 100) / 100;
   }
+  // Expired partially-paid: user only owes what they paid (coverage days consumed)
+  if (b.status === 'expired' && isPartiallyPaid(b)) {
+    return totalPaid(b);
+  }
   return bkRateStored(b);
 }
 

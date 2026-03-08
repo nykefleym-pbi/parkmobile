@@ -16,7 +16,7 @@ export default function ReceivablesScreen() {
     userMap[bk.userEmail].count++;
   });
 
-  const sorted = Object.values(userMap).map(u => ({ ...u, balance: u.totalOwedAmt - u.totalPaidAmt })).sort((a, b) => b.balance - a.balance).slice(0, 10);
+  const sorted = Object.values(userMap).map(u => ({ ...u, balance: u.totalOwedAmt - u.totalPaidAmt })).filter(u => u.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 10);
 
   return (
     <div className="pa-screen-content">
