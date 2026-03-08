@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface AppState {
   loading: boolean;
+  configLoaded: boolean;
   config: AppConfig;
   configDbId: string | null;
   currentUser: RegisteredUser | null;
