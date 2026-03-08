@@ -11,6 +11,15 @@ export default function SignupScreen() {
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
 
+  async function doGoogle() {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) { setError(error.message); setLoading(false); }
+  }
+
   async function doSignup() {
     const { name, email, phone, pass, blklot, restype, car, plate, color } = form;
     if (!name || !email || !phone || !pass || !blklot || !car || !plate) { setError('Please fill in all required fields.'); return; }
