@@ -22,7 +22,7 @@ function AppShell() {
   const { screen, activeTab, isAdmin, buildLocs } = useApp();
   const locs = buildLocs();
 
-  const showTabs = !['splash', 'login', 'signup', 'admin-login', 'ticket', 'help'].includes(screen)
+  const showTabs = !['splash', 'login', 'signup', 'admin-login', 'ticket', 'help', 'forgot-password', 'complete-profile'].includes(screen)
     && !screen.startsWith('spots') && !screen.startsWith('spots-view');
 
   const content = useMemo(() => {
