@@ -106,7 +106,7 @@ export default function ProfileScreen() {
         )
       );
     } catch (err: any) {
-      toast({ title: 'Error setting primary', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error setting primary. Please try again.');
     } finally {
       setSaving(false);
     }

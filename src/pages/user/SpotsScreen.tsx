@@ -59,7 +59,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
       setTimeout(() => setScreen('ticket'), 1100);
     } catch (err: any) {
       setConfirmed(false);
-      toast({ title: 'Booking failed', description: err?.message || 'Could not complete your reservation.', variant: 'destructive' });
+      toast.error(err?.message || 'Booking failed. Could not complete your reservation.');
     }
   }
 
