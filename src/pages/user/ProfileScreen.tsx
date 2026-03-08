@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getInitials, fmtMonthYear, formatPeso } from '@/lib/helpers';
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
       setCars(newCars);
       setShowCarModal(false);
     } catch (err: any) {
-      toast({ title: 'Error saving vehicle', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error saving vehicle. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -88,7 +88,7 @@ export default function ProfileScreen() {
       }
       setCars(newCars);
     } catch (err: any) {
-      toast({ title: 'Error removing vehicle', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error removing vehicle. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -106,7 +106,7 @@ export default function ProfileScreen() {
         )
       );
     } catch (err: any) {
-      toast({ title: 'Error setting primary', description: err?.message || 'Please try again.', variant: 'destructive' });
+      toast.error(err?.message || 'Error setting primary. Please try again.');
     } finally {
       setSaving(false);
     }

@@ -3,7 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { isoDate, today, addDays } from '@/lib/helpers';
 import { ArrowLeft, Check } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
@@ -28,7 +28,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
     const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
 
     if (!car.dbId) {
-      toast({ title: 'Vehicle not synced', description: 'This vehicle has not been saved to the database yet. Please go to Profile and re-save it.', variant: 'destructive' });
+      toast.error('Vehicle not synced. Please go to Profile and re-save it.');
       return;
     }
 
@@ -59,7 +59,7 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
       setTimeout(() => setScreen('ticket'), 1100);
     } catch (err: any) {
       setConfirmed(false);
-      toast({ title: 'Booking failed', description: err?.message || 'Could not complete your reservation.', variant: 'destructive' });
+      toast.error(err?.message || 'Booking failed. Could not complete your reservation.');
     }
   }
 

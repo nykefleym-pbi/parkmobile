@@ -1,3 +1,4 @@
+import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPeso } from '@/lib/helpers';
 import { totalOwed, totalPaid, remaining, penaltyAmt } from '@/lib/booking-utils';
@@ -5,7 +6,8 @@ import { LogOut } from 'lucide-react';
 
 export default function ReceivablesScreen() {
   const { globalBookings, checkExpired, logout } = useApp();
-  checkExpired();
+  
+  React.useEffect(() => { checkExpired(); }, []);
 
   const userMap: Record<string, { name: string; blklot: string; email: string; totalOwedAmt: number; totalPaidAmt: number; penalties: number; count: number }> = {};
   globalBookings.forEach(bk => {
