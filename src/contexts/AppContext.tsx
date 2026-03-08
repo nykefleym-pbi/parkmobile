@@ -89,7 +89,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       supabase.from('bookings').select('*').eq('user_id', userId),
       supabase.from('payments').select('*'),
       supabase.from('penalties').select('*'),
-      supabase.from('bookings').select('slot_id').eq('status', 'active'),
+      supabase.rpc('get_occupied_slots'),
     ]);
 
     const uCars: Car[] = (vehRes.data || []).map((v: any) => ({

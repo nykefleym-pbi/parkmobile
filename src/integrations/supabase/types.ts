@@ -373,7 +373,12 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_occupied_slots: {
+        Args: never
+        Returns: {
+          slot_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
