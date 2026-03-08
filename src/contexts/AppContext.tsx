@@ -133,10 +133,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Set up auth listener BEFORE checking session
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
+          // Block unverified email users
+          if (!session.user.email_confirmed_at) {
+            await supabase.auth.signOut();
+            setAuthUser(null);
+            setScreen('login');
+            return;
+          }
           setAuthUser(session.user);
           if (screen === 'splash' || screen === 'login' || screen === 'signup') {
             await loadUserData(session.user.id);
-            // Check if profile is incomplete (e.g. Google OAuth new user)
             const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
             if (prof && (!prof.phone || !prof.block_lot)) {
               setScreen('complete-profile');
