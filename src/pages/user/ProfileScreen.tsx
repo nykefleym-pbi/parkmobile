@@ -14,7 +14,7 @@ export default function ProfileScreen() {
   const [profileForm, setProfileForm] = useState({ ...profile });
   const [notificationsOn, setNotificationsOn] = useState(true);
 
-  const tp = getUserPayable();
+  const tp = useMemo(() => getUserPayable(), [bookings]);
   const rl = { Resident: 'Resident (Owner)', Renter: 'Renter', Others: 'Others' }[profile.restype] || profile.restype;
 
   function openCarModal(idx: number) {
