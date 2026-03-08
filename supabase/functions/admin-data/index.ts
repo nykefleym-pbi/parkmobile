@@ -54,20 +54,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const [bkRes, pmRes, penRes] = await Promise.all([
-      supabase.from("bookings").select("*"),
-      supabase.from("payments").select("*"),
-      supabase.from("penalties").select("*"),
-    ]);
+    // Fetch bookings scoped by admin_id
+    const { data: bks } = await supabase.from("bookings").select("*").eq("admin_id", adminId);
+    const bookingIds = (bks || []).map((b: any) => b.id);
+
+    // Fetch payments and penalties only for this admin's bookings
+    let pmts: any[] = [];
+    let pens: any[] = [];
+    if (bookingIds.length > 0) {
+      const [pmRes, penRes] = await Promise.all([
+        supabase.from("payments").select("*").in("booking_id", bookingIds),
+        supabase.from("penalties").select("*").in("booking_id", bookingIds),
+      ]);
+      pmts = pmRes.data || [];
+      pens = penRes.data || [];
+    }
 
     return new Response(JSON.stringify({
-      bookings: bkRes.data || [],
-      payments: pmRes.data || [],
-      penalties: penRes.data || [],
+      bookings: bks || [],
+      payments: pmts,
+      penalties: pens,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
