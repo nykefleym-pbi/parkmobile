@@ -3,7 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
-import { LogOut } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TicketsScreen() {
@@ -13,6 +13,7 @@ export default function TicketsScreen() {
   const [penTarget, setPenTarget] = useState<string | null>(null);
   const [payForm, setPayForm] = useState({ amount: '', method: 'GCash', date: isoDate(today()), receipt: '', issued: false });
   const [penForm, setPenForm] = useState({ days: '', notes: '' });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   checkExpired();
   const filters = ['all', 'unpaid', 'partial', 'paid', 'penalized', 'active', 'expired', 'cancelled'];
@@ -103,39 +104,48 @@ export default function TicketsScreen() {
         const full = isFullyPaid(bk), part = isPartiallyPaid(bk);
         const statusCls = full ? 'paid' : part ? 'partial' : 'unpaid';
         const statusLbl = full ? 'Paid' : part ? `Partial (₱${rem.toLocaleString()} left)` : 'Unpaid';
+        const isExpanded = expandedId === bk.id;
 
         return (
           <div key={bk.id} className={`pa-admin-ticket pa-fu pa-d${Math.min(i + 1, 5)}`}>
-            <div className="pa-at-top">
+            <div className="pa-at-top" onClick={() => setExpandedId(isExpanded ? null : bk.id)} style={{ cursor: 'pointer' }}>
               <div className="pa-at-slot">{bk.slotId}{pen > 0 ? ' ⚠' : ''}</div>
-              <div className={`pa-at-status ${statusCls}`}>{statusLbl}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className={`pa-at-status ${statusCls}`}>{statusLbl}</div>
+                {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--pa-tx2)' }} /> : <ChevronDown size={16} style={{ color: 'var(--pa-tx2)' }} />}
+              </div>
             </div>
-            <div className="pa-at-row"><span>Resident</span><strong>{bk.userName}</strong></div>
-            <div className="pa-at-row"><span>Block/Lot</span><strong>{bk.userBlklot}</strong></div>
-            <div className="pa-at-row"><span>Vehicle</span><strong>{bk.car.name} · {bk.car.plate}</strong></div>
-            <div className="pa-at-row"><span>{bk.locName}</span><strong>{fmtDate(bk.startDate)} — {fmtDate(bk.endDate)}</strong></div>
-            <div className="pa-at-row"><span>Base Fee</span><strong>{formatPeso(fee)}</strong></div>
-            {pen > 0 && bk.penalty && <>
-              <div className="pa-at-row"><span>Penalty ({bk.penalty.days}d overstay)</span><strong style={{ color: '#EF6C00' }}>{formatPeso(pen)}</strong></div>
-              <div className="pa-at-row"><span>Parked until</span><strong style={{ color: 'var(--pa-red)' }}>{fmtDate(addDays(bk.endDate, bk.penalty.days))}</strong></div>
-            </>}
-            <div className="pa-at-row"><span>Total Owed</span><strong>{formatPeso(owed)}</strong></div>
-            <div className="pa-at-row"><span>Paid</span><strong style={{ color: full ? 'var(--pa-grn)' : tp > 0 ? '#EF6C00' : 'var(--pa-tx2)' }}>{formatPeso(tp)}</strong></div>
-            {bk.status === 'active' && hasPaid(bk) && !full && !bk.penalty && (
-              <div className="pa-at-row"><span>Coverage</span><strong>{coverageDays(bk)} days (until {fmtDate(coverageEndDate(bk))})</strong></div>
+
+            {isExpanded && (
+              <>
+                <div className="pa-at-row"><span>Resident</span><strong>{bk.userName}</strong></div>
+                <div className="pa-at-row"><span>Block/Lot</span><strong>{bk.userBlklot}</strong></div>
+                <div className="pa-at-row"><span>Vehicle</span><strong>{bk.car.name} · {bk.car.plate}</strong></div>
+                <div className="pa-at-row"><span>{bk.locName}</span><strong>{fmtDate(bk.startDate)} — {fmtDate(bk.endDate)}</strong></div>
+                <div className="pa-at-row"><span>Base Fee</span><strong>{formatPeso(fee)}</strong></div>
+                {pen > 0 && bk.penalty && <>
+                  <div className="pa-at-row"><span>Penalty ({bk.penalty.days}d overstay)</span><strong style={{ color: '#EF6C00' }}>{formatPeso(pen)}</strong></div>
+                  <div className="pa-at-row"><span>Parked until</span><strong style={{ color: 'var(--pa-red)' }}>{fmtDate(addDays(bk.endDate, bk.penalty.days))}</strong></div>
+                </>}
+                <div className="pa-at-row"><span>Total Owed</span><strong>{formatPeso(owed)}</strong></div>
+                <div className="pa-at-row"><span>Paid</span><strong style={{ color: full ? 'var(--pa-grn)' : tp > 0 ? '#EF6C00' : 'var(--pa-tx2)' }}>{formatPeso(tp)}</strong></div>
+                {bk.status === 'active' && hasPaid(bk) && !full && !bk.penalty && (
+                  <div className="pa-at-row"><span>Coverage</span><strong>{coverageDays(bk)} days (until {fmtDate(coverageEndDate(bk))})</strong></div>
+                )}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  {!full ? (
+                    <button className="pa-admin-action-btn green" onClick={e => { e.stopPropagation(); setPayForm({ amount: String(rem), method: 'GCash', date: isoDate(today()), receipt: '', issued: false }); setPayTarget(bk.id); }}>
+                      + Payment
+                    </button>
+                  ) : <div className="pa-admin-action-settled">✓ Settled</div>}
+                  {!bk.penalty ? (
+                    <button className="pa-admin-action-btn orange" onClick={e => { e.stopPropagation(); setPenForm({ days: '', notes: '' }); setPenTarget(bk.id); }}>
+                      ⚠ Penalty
+                    </button>
+                  ) : <div className="pa-admin-action-penalty">⚠ {bk.penalty.days}d penalty</div>}
+                </div>
+              </>
             )}
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {!full ? (
-                <button className="pa-admin-action-btn green" onClick={e => { e.stopPropagation(); setPayForm({ amount: String(rem), method: 'GCash', date: isoDate(today()), receipt: '', issued: false }); setPayTarget(bk.id); }}>
-                  + Payment
-                </button>
-              ) : <div className="pa-admin-action-settled">✓ Settled</div>}
-              {!bk.penalty ? (
-                <button className="pa-admin-action-btn orange" onClick={e => { e.stopPropagation(); setPenForm({ days: '', notes: '' }); setPenTarget(bk.id); }}>
-                  ⚠ Penalty
-                </button>
-              ) : <div className="pa-admin-action-penalty">⚠ {bk.penalty.days}d penalty</div>}
-            </div>
           </div>
         );
       })}
