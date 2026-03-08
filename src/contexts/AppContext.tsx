@@ -123,6 +123,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOccupiedSlots((occRes.data || []).map((b: any) => b.slot_id));
   }, []);
 
+  // Real-time subscriptions for payments, penalties, bookings
+  useEffect(() => {
+    if (!authUser) return;
+    const userId = authUser.id;
+
+    const channel = supabase.channel('user-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments' }, (payload) => {
+        const p = payload.new as any;
+        setBookings(prev => prev.map(b => {
+          if (b.dbId !== p.booking_id) return b;
+          // Avoid duplicates
+          if (b.payments.some(pm => pm.dbId === p.id)) return b;
+          return { ...b, payments: [...b.payments, { amount: +p.amount, method: p.method, date: p.transaction_date, receipt: p.receipt_number || '', receiptIssued: p.receipt_issued || false, dbId: p.id }] };
+        }));
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'penalties' }, (payload) => {
+        const p = payload.new as any;
+        setBookings(prev => prev.map(b => {
+          if (b.dbId !== p.booking_id) return b;
+          if (b.penalty) return b;
+          return { ...b, penalty: { days: p.overstay_days, amount: +p.amount, date: p.applied_date, notes: p.notes || '', dbId: p.id } };
+        }));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [authUser]);
+
   useEffect(() => {
     async function init() {
       const { config: cfg, configDbId: cid } = await loadAppConfig();

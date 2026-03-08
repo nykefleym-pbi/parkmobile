@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
 import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TicketsScreen() {
-  const { globalBookings, setGlobalBookings, checkExpired, logout } = useApp();
+  const { globalBookings, setGlobalBookings, checkExpired, logout, adminToken } = useApp();
   const [filter, setFilter] = useState('all');
   const [payTarget, setPayTarget] = useState<string | null>(null);
   const [penTarget, setPenTarget] = useState<string | null>(null);
@@ -33,16 +34,25 @@ export default function TicketsScreen() {
     const rem = remaining(payBk);
     if (amt > rem) { alert(`Amount exceeds balance of ₱${rem.toLocaleString()}.`); return; }
 
-    if (payBk.dbId) {
-      await supabase.from('payments').insert({
-        booking_id: payBk.dbId, amount: amt, method: payForm.method,
-        transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
-      });
+    const insertData = {
+      booking_id: payBk.dbId, amount: amt, method: payForm.method,
+      transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
+    };
+
+    const { data: res, error } = await supabase.functions.invoke('admin-action', {
+      body: { token: adminToken, action: 'insert_payment', data: insertData },
+    });
+
+    if (error || res?.error) {
+      toast.error(res?.error || 'Failed to record payment');
+      return;
     }
+
     setGlobalBookings(prev => prev.map(b => b.id === payTarget ? {
       ...b, payments: [...b.payments, { amount: amt, method: payForm.method, date: payForm.date, receipt: payForm.receipt, receiptIssued: payForm.issued }]
     } : b));
     setPayTarget(null);
+    toast.success('Payment recorded');
   }
 
   async function confirmPenalty() {
@@ -52,16 +62,25 @@ export default function TicketsScreen() {
     const amt = Math.round(days * bkDaily(penBk) * 100) / 100;
     const dt = isoDate(today());
 
-    if (penBk.dbId) {
-      await supabase.from('penalties').insert({
-        booking_id: penBk.dbId, overstay_days: days, amount: amt,
-        applied_date: dt, notes: penForm.notes || null,
-      });
+    const insertData = {
+      booking_id: penBk.dbId, overstay_days: days, amount: amt,
+      applied_date: dt, notes: penForm.notes || null,
+    };
+
+    const { data: res, error } = await supabase.functions.invoke('admin-action', {
+      body: { token: adminToken, action: 'insert_penalty', data: insertData },
+    });
+
+    if (error || res?.error) {
+      toast.error(res?.error || 'Failed to apply penalty');
+      return;
     }
+
     setGlobalBookings(prev => prev.map(b => b.id === penTarget ? {
       ...b, penalty: { days, amount: amt, date: dt, notes: penForm.notes }
     } : b));
     setPenTarget(null);
+    toast.success('Penalty applied');
   }
 
   return (
