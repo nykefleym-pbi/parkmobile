@@ -76,8 +76,10 @@ export default function SignupScreen() {
       <div className="pa-auth-screen">
         <div className="pa-auth-header">
           <div className="pa-community">{config.subdiv}</div>
-          <h1>Account <span className="pa-serif">created!</span></h1>
-          <p>You can now log in with your credentials.</p>
+          <h1>Verify your <span className="pa-serif">email</span></h1>
+          <p>We've sent a verification link to <strong>{form.email}</strong>. Please check your inbox and click the link to activate your account.</p>
+        </div>
+        <button className="pa-auth-btn outline" onClick={() => setScreen('login')}>Back to Login</button>
         </div>
       </div>
     );
