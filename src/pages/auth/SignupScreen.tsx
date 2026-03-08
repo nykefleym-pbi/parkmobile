@@ -29,12 +29,12 @@ export default function SignupScreen() {
     setError('');
 
     try {
-      // Sign up with Supabase Auth
+      // Store all signup details in user metadata so they persist through email verification
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password: pass,
         options: {
-          data: { name },
+          data: { name, phone, block_lot: blklot, residence_type: restype, car_name: car, car_plate: plate, car_color: color || 'White' },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -50,18 +50,6 @@ export default function SignupScreen() {
         setLoading(false);
         return;
       }
-
-      const userId = data.user.id;
-
-      // Update profile with additional details
-      await supabase.from('profiles').update({
-        phone, block_lot: blklot, residence_type: restype,
-      }).eq('id', userId);
-
-      // Insert primary vehicle
-      await supabase.from('vehicles').insert({
-        user_id: userId, name: car, plate, color: color || 'White', is_primary: true,
-      });
 
       setSuccess(true);
     } catch {
