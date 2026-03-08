@@ -161,10 +161,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       // Check existing session
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      if (session?.user && session.user.email_confirmed_at) {
         setAuthUser(session.user);
         await loadUserData(session.user.id);
-        // Check if profile is incomplete
         const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
         setLoading(false);
         if (prof && (!prof.phone || !prof.block_lot)) {
