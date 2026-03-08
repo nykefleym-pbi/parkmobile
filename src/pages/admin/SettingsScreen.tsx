@@ -114,7 +114,7 @@ export default function SettingsScreen() {
               <div className="pa-f-group"><label className="pa-f-label">Address</label><input className="pa-f-input" value={sp.addr} onChange={e => updateSpace(i, 'addr', e.target.value)} /></div>
               <div className="pa-f-row">
                 <div className="pa-f-group"><label className="pa-f-label">Slots</label><input className="pa-f-input" type="number" min="1" max="50" value={sp.slots} onChange={e => updateSpace(i, 'slots', Math.max(1, parseInt(e.target.value) || 1))} /></div>
-                <div className="pa-f-group"><label className="pa-f-label">Rate (₱)</label><input className="pa-f-input" type="number" min="100" value={sp.rate} onChange={e => updateSpace(i, 'rate', Math.max(100, parseInt(e.target.value) || 1500))} /></div>
+                <div className="pa-f-group"><label className="pa-f-label">Rate per Month (₱)</label><input className="pa-f-input" type="number" min="100" value={sp.rate} onFocus={e => e.target.select()} onChange={e => updateSpace(i, 'rate', Math.max(100, parseInt(e.target.value) || 1500))} /></div>
               </div>
             </div>
           );

@@ -175,8 +175,8 @@ export default function TicketsScreen() {
               </select>
             </div>
             <div className="pa-f-group"><label className="pa-f-label">Transaction Date</label><input className="pa-f-input" type="date" value={payForm.date} onChange={e => setPayForm(p => ({ ...p, date: e.target.value }))} /></div>
-            <div className="pa-f-group"><label className="pa-f-label">Receipt Number</label><input className="pa-f-input" placeholder="e.g. RCT-2026-001" value={payForm.receipt} onChange={e => setPayForm(p => ({ ...p, receipt: e.target.value }))} /></div>
-            <label className="pa-f-check"><input type="checkbox" checked={payForm.issued} onChange={e => setPayForm(p => ({ ...p, issued: e.target.checked }))} /><div className="pa-ck" />Receipt issued to resident</label>
+            <div className="pa-f-group"><label className="pa-f-label">Receipt Number</label><input className="pa-f-input" placeholder="e.g. RCT-2026-001" value={payForm.receipt} onChange={e => { const v = e.target.value; setPayForm(p => ({ ...p, receipt: v, issued: v ? p.issued : false })); }} /></div>
+            <label className="pa-f-check" style={{ opacity: payForm.receipt ? 1 : 0.5, pointerEvents: payForm.receipt ? 'auto' : 'none' }}><input type="checkbox" checked={payForm.issued} disabled={!payForm.receipt} onChange={e => setPayForm(p => ({ ...p, issued: e.target.checked }))} /><div className="pa-ck" />Receipt issued to resident</label>
             <div className="pa-modal-btns">
               <button className="pa-m-cancel" onClick={() => setPayTarget(null)}>Cancel</button>
               <button className="pa-m-confirm" style={{ background: 'var(--pa-grn)' }} onClick={confirmPayment}>Confirm Payment</button>
