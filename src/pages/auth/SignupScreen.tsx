@@ -80,7 +80,6 @@ export default function SignupScreen() {
           <p>We've sent a verification link to <strong>{form.email}</strong>. Please check your inbox and click the link to activate your account.</p>
         </div>
         <button className="pa-auth-btn outline" onClick={() => setScreen('login')}>Back to Login</button>
-        </div>
       </div>
     );
   }
