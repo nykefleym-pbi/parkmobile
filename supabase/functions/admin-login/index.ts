@@ -111,6 +111,30 @@ Deno.serve(async (req) => {
       await supabase.from("admins").update({ password_hash: hashed }).eq("id", admin.id);
     }
 
+    // Auto-initialize app_config and spaces for new admins
+    const { data: existingConfig } = await supabase
+      .from("app_config")
+      .select("id")
+      .eq("admin_id", admin.id)
+      .limit(1);
+
+    if (!existingConfig || existingConfig.length === 0) {
+      await supabase.from("app_config").insert({
+        admin_id: admin.id,
+        subdiv_name: admin.name,
+        app_name: "ParkAssist",
+        theme: "green",
+        hoa_phone: "",
+        hoa_email: "",
+        hoa_hours: "Mon–Sat, 8AM–5PM",
+      });
+
+      await supabase.from("spaces").insert([
+        { admin_id: admin.id, name: "Open Space 1", address: "Parking Area 1", slots: 15, rate: 1500, sort_order: 0 },
+        { admin_id: admin.id, name: "Open Space 2", address: "Parking Area 2", slots: 15, rate: 1500, sort_order: 1 },
+      ]);
+    }
+
     const token = await generateToken(admin.id);
 
     return new Response(JSON.stringify({
