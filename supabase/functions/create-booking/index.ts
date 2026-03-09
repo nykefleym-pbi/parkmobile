@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     }
 
     // Look up the space to get the correct rate (prevents rate manipulation)
-    const { data: space } = await admin.from("spaces").select("rate, name").eq("name", space_name).maybeSingle();
+    const { data: space } = await admin.from("spaces").select("rate, name").eq("name", space_name).eq("admin_id", profile.admin_id).maybeSingle();
     if (!space) {
       return new Response(JSON.stringify({ error: "Parking space not found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
