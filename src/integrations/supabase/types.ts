@@ -408,56 +408,6 @@ export type Database = {
           vehicle_name: string | null
           vehicle_plate: string | null
         }
-        Insert: {
-          admin_id?: string | null
-          base_fee?: never
-          booking_code?: string | null
-          cancelled_date?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          id?: string | null
-          penalty_amount?: never
-          penalty_days?: never
-          rate?: number | null
-          slot_id?: string | null
-          space_name?: string | null
-          start_date?: string | null
-          status?: string | null
-          total_paid?: never
-          user_block_lot?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_name?: string | null
-          vehicle_color?: string | null
-          vehicle_id?: string | null
-          vehicle_name?: string | null
-          vehicle_plate?: string | null
-        }
-        Update: {
-          admin_id?: string | null
-          base_fee?: never
-          booking_code?: string | null
-          cancelled_date?: string | null
-          created_at?: string | null
-          end_date?: string | null
-          id?: string | null
-          penalty_amount?: never
-          penalty_days?: never
-          rate?: number | null
-          slot_id?: string | null
-          space_name?: string | null
-          start_date?: string | null
-          status?: string | null
-          total_paid?: never
-          user_block_lot?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_name?: string | null
-          vehicle_color?: string | null
-          vehicle_id?: string | null
-          vehicle_name?: string | null
-          vehicle_plate?: string | null
-        }
         Relationships: [
           {
             foreignKeyName: "bookings_admin_id_fkey"
