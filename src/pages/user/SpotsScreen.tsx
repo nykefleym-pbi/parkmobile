@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
-import { isoDate, today, addDays } from '@/lib/helpers';
 import { ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SpotsScreenProps { locIdx: number; highlightSlot?: string; }
 
 export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps) {
-  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config, adminId } = useApp();
+  const { buildLocs, occupiedSlots, setOccupiedSlots, bookings, cars, profile, authUser, setBookings, setScreen, config } = useApp();
   const locs = useMemo(() => buildLocs(), [config.spaces, buildLocs]);
   const loc = locs[locIdx];
   const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
@@ -34,25 +33,22 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
 
     setConfirmed(true);
     try {
-      const s = isoDate(today()), e = isoDate(addDays(today(), 30));
-      const code = 'BK-' + Date.now();
+      const { data, error } = await supabase.functions.invoke('create-booking', {
+        body: { space_name: loc.name, slot_id: selectedSpot, vehicle_id: car.dbId },
+      });
 
-      const { data: res, error } = await supabase.from('bookings').insert({
-        booking_code: code, user_id: authUser.id, space_name: loc.name, slot_id: selectedSpot,
-        vehicle_id: car.dbId, vehicle_name: car.name, vehicle_plate: car.plate,
-        vehicle_color: car.color, rate: loc.rate, status: 'active', start_date: s, end_date: e,
-        user_name: profile.name, user_email: profile.email, user_block_lot: profile.blklot,
-        admin_id: adminId,
-      }).select();
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || 'Booking failed');
+      }
 
-      if (error) throw error;
-
-      const dbId = res && res.length ? res[0].id : null;
+      const b = data.booking;
       const bk = {
-        dbId, id: code, slotId: selectedSpot, locName: loc.name, startDate: s, endDate: e,
-        status: 'active', cancelledDate: null, car: { name: car.name, plate: car.plate, color: car.color },
-        userName: profile.name, userEmail: profile.email, userBlklot: profile.blklot,
-        rate: loc.rate, userId: authUser.id, payments: [], penalty: null,
+        dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
+        startDate: b.start_date, endDate: b.end_date, status: b.status,
+        cancelledDate: b.cancelled_date,
+        car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
+        userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
+        rate: +b.rate, userId: b.user_id, payments: [], penalty: null,
       };
       setBookings(prev => [...prev, bk]);
       setOccupiedSlots(prev => [...prev, selectedSpot]);
