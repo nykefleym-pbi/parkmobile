@@ -32,9 +32,7 @@ export default function LoginScreen() {
           setLoading(false);
           return;
         }
-        await loadUserData(data.user.id);
-        setActiveTab('search');
-        setScreen('home');
+        // onAuthStateChange handles loadUserData and navigation
       }
     } catch {
       setError('Connection error. Please try again.');
