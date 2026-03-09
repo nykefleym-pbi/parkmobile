@@ -27,7 +27,7 @@ export async function loadAppConfig(adminId?: string | null): Promise<{ config: 
       defaults.theme = c.theme;
       defaults.logo = c.logo_url;
       defaults.adminId = (c as any).admin_id || undefined;
-      defaults.hoa = { phone: c.hoa_phone || '', email: c.hoa_email || '', hours: c.hoa_hours || '' };
+      defaults.hoa = { phone: c.hoa_phone || '[mobile number]', email: c.hoa_email || '[email address]', hours: c.hoa_hours || '[availability]' };
     }
 
     let spacesQuery = supabase.from('spaces').select('*').order('sort_order');

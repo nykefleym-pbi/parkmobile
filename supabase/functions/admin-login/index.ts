@@ -130,8 +130,8 @@ Deno.serve(async (req) => {
       });
 
       await supabase.from("spaces").insert([
-        { admin_id: admin.id, name: "Open Space 1", address: "Parking Area 1", slots: 15, rate: 1500, sort_order: 0 },
-        { admin_id: admin.id, name: "Open Space 2", address: "Parking Area 2", slots: 15, rate: 1500, sort_order: 1 },
+        { admin_id: admin.id, name: "Parking Space 1", address: "[parking space address]", slots: 10, rate: 1500, sort_order: 0 },
+        { admin_id: admin.id, name: "Parking Space 2", address: "[parking space address]", slots: 10, rate: 1500, sort_order: 1 },
       ]);
     }
 
