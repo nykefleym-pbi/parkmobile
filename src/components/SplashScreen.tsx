@@ -36,7 +36,7 @@ export default function SplashScreen() {
             </svg>
           )}
         </div>
-        <div className="pa-splash-name" dangerouslySetInnerHTML={{ __html: config.appName }} />
+        <div className="pa-splash-name">{config.appName}</div>
         <div className="pa-splash-sub">{config.subdiv}</div>
       </div>
       <div className="pa-splash-loader" />

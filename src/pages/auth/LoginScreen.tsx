@@ -3,7 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function LoginScreen() {
-  const { setScreen, config, loadUserData, setActiveTab } = useApp();
+  const { setScreen, config } = useApp();
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
