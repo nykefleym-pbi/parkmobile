@@ -6,6 +6,8 @@ const corsHeaders = {
 };
 
 const PBKDF2_ITERATIONS = 310000;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 async function hashPasswordPbkdf2(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -25,7 +27,6 @@ async function verifyPasswordPbkdf2(password: string, stored: string): Promise<b
   const parts = stored.split("$");
   const iterations = parseInt(parts[2]);
   const saltHex = parts[3];
-  const storedHash = parts[4];
   const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
   const keyMaterial = await crypto.subtle.importKey(
     "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
@@ -35,7 +36,7 @@ async function verifyPasswordPbkdf2(password: string, stored: string): Promise<b
     keyMaterial, 256
   );
   const hashHex = [...new Uint8Array(derived)].map(b => b.toString(16).padStart(2, "0")).join("");
-  return hashHex === storedHash;
+  return hashHex === parts[4];
 }
 
 async function verifyPasswordSha256(password: string, stored: string): Promise<boolean> {
@@ -67,6 +68,30 @@ async function generateToken(adminId: string): Promise<string> {
   return `${payload}.${sigHex}`;
 }
 
+async function checkBruteForce(supabase: any, username: string): Promise<{ locked: boolean; minutesLeft: number }> {
+  const cutoff = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
+  const { data: attempts } = await supabase
+    .from("admin_login_attempts")
+    .select("id")
+    .eq("username", username)
+    .eq("success", false)
+    .gte("attempted_at", cutoff);
+
+  const failedCount = attempts?.length || 0;
+  if (failedCount >= MAX_FAILED_ATTEMPTS) {
+    return { locked: true, minutesLeft: LOCKOUT_MINUTES };
+  }
+  return { locked: false, minutesLeft: 0 };
+}
+
+async function recordAttempt(supabase: any, username: string, success: boolean) {
+  await supabase.from("admin_login_attempts").insert({ username, success });
+  // Cleanup old attempts periodically
+  if (Math.random() < 0.1) {
+    await supabase.rpc("cleanup_old_login_attempts");
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -85,6 +110,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Check brute force lockout
+    const { locked, minutesLeft } = await checkBruteForce(supabase, username);
+    if (locked) {
+      return new Response(JSON.stringify({ error: `Too many failed attempts. Try again in ${minutesLeft} minutes.` }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: admins, error } = await supabase
       .from("admins")
       .select("*")
@@ -92,6 +125,7 @@ Deno.serve(async (req) => {
       .limit(1);
 
     if (error || !admins?.length) {
+      await recordAttempt(supabase, username, false);
       return new Response(JSON.stringify({ error: "Invalid admin credentials." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -100,10 +134,14 @@ Deno.serve(async (req) => {
     const admin = admins[0];
     const valid = await verifyPassword(password, admin.password_hash);
     if (!valid) {
+      await recordAttempt(supabase, username, false);
       return new Response(JSON.stringify({ error: "Invalid admin credentials." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Record successful login & clear failed attempts
+    await recordAttempt(supabase, username, true);
 
     // Auto-migrate old hashes to PBKDF2
     if (!admin.password_hash.startsWith("$pbkdf2$")) {
