@@ -22,7 +22,6 @@ interface AppState {
   cars: Car[];
   bookings: Booking[];
   globalBookings: Booking[];
-  registeredUsers: RegisteredUser[];
   occupiedSlots: string[];
   screen: string;
   activeTab: string;
@@ -39,7 +38,6 @@ interface AppState {
   setCars: React.Dispatch<React.SetStateAction<Car[]>>;
   setBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
   setGlobalBookings: React.Dispatch<React.SetStateAction<Booking[]>>;
-  setRegisteredUsers: React.Dispatch<React.SetStateAction<RegisteredUser[]>>;
   setOccupiedSlots: React.Dispatch<React.SetStateAction<string[]>>;
   buildLocs: () => Location[];
   checkExpired: () => void;
@@ -70,7 +68,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cars, setCars] = useState<Car[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [globalBookings, setGlobalBookings] = useState<Booking[]>([]);
-  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [screen, setScreen] = useState('splash');
@@ -86,7 +83,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [adminId]);
 
   const loadUserData = useCallback(async (userId: string) => {
-    // Load profile
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (prof) {
       const userAdminId = (prof as any).admin_id || null;
@@ -98,17 +94,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       setCurrentUser({
         dbId: userId, name: prof.name, email: prof.email, phone: prof.phone || '',
-        pass: '', blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
+        blklot: prof.block_lot || '', restype: prof.residence_type || 'Resident',
         avatar: prof.avatar_url, memberSince: prof.created_at, cars: [], bookings: [],
       });
-
-      // Reload config scoped to this user's admin
       if (userAdminId) {
         await reloadConfig(userAdminId);
       }
     }
 
-    // Load vehicles, bookings, payments, penalties in parallel
     const [vehRes, bkRes, pmRes, penRes, occRes] = await Promise.all([
       supabase.from('vehicles').select('*').eq('user_id', userId),
       supabase.from('bookings').select('*').eq('user_id', userId),
@@ -148,10 +141,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOccupiedSlots((occRes.data || []).map((b: any) => b.slot_id));
   }, [reloadConfig]);
 
-  // Real-time subscriptions for payments, penalties, bookings
+  // Shared logic for handling authenticated user (profile completion check + navigation)
+  const handleAuthenticatedUser = useCallback(async (user: User) => {
+    await loadUserData(user.id);
+    const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', user.id).single();
+    const hasProfile = prof && prof.phone && prof.block_lot;
+
+    if (!hasProfile) {
+      const meta = user.user_metadata;
+      if (meta?.phone && meta?.block_lot) {
+        await supabase.from('profiles').update({
+          phone: meta.phone,
+          block_lot: meta.block_lot,
+          residence_type: meta.residence_type || 'Resident',
+        }).eq('id', user.id);
+
+        const { data: existingVehicles } = await supabase.from('vehicles').select('id').eq('user_id', user.id);
+        if ((!existingVehicles || existingVehicles.length === 0) && meta.car_name && meta.car_plate) {
+          await supabase.from('vehicles').insert({
+            user_id: user.id,
+            name: meta.car_name,
+            plate: meta.car_plate,
+            color: meta.car_color || 'White',
+            is_primary: true,
+          });
+        }
+
+        await loadUserData(user.id);
+        setActiveTab('search');
+        setScreen('home');
+      } else {
+        setScreen('complete-profile');
+      }
+    } else {
+      setActiveTab('search');
+      setScreen('home');
+    }
+  }, [loadUserData]);
+
   useEffect(() => {
     if (!authUser) return;
-
     const channel = supabase.channel('user-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments' }, (payload) => {
         const p = payload.new as any;
@@ -170,20 +199,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }));
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [authUser]);
 
   useEffect(() => {
     async function init() {
-      // Load default config initially (will be reloaded with admin scope after login)
       const { config: cfg, configDbId: cid } = await loadAppConfig();
       setConfig(cfg);
       setConfigDbId(cid);
       setConfigLoaded(true);
       applyTheme(cfg.theme);
 
-      // Set up auth listener BEFORE checking session
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
           if (!session.user.email_confirmed_at) {
@@ -194,39 +220,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
           setAuthUser(session.user);
           if (screen === 'splash' || screen === 'login' || screen === 'signup') {
-            await loadUserData(session.user.id);
-            const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
-            const hasProfile = prof && prof.phone && prof.block_lot;
-            if (!hasProfile) {
-              const meta = session.user.user_metadata;
-              if (meta?.phone && meta?.block_lot) {
-                await supabase.from('profiles').update({
-                  phone: meta.phone,
-                  block_lot: meta.block_lot,
-                  residence_type: meta.residence_type || 'Resident',
-                }).eq('id', session.user.id);
-
-                const { data: existingVehicles } = await supabase.from('vehicles').select('id').eq('user_id', session.user.id);
-                if ((!existingVehicles || existingVehicles.length === 0) && meta.car_name && meta.car_plate) {
-                  await supabase.from('vehicles').insert({
-                    user_id: session.user.id,
-                    name: meta.car_name,
-                    plate: meta.car_plate,
-                    color: meta.car_color || 'White',
-                    is_primary: true,
-                  });
-                }
-
-                await loadUserData(session.user.id);
-                setActiveTab('search');
-                setScreen('home');
-              } else {
-                setScreen('complete-profile');
-              }
-            } else {
-              setActiveTab('search');
-              setScreen('home');
-            }
+            await handleAuthenticatedUser(session.user);
           }
         } else {
           setAuthUser(null);
@@ -240,40 +234,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user && session.user.email_confirmed_at) {
         setAuthUser(session.user);
-        await loadUserData(session.user.id);
-        const { data: prof } = await supabase.from('profiles').select('phone, block_lot').eq('id', session.user.id).single();
-        const hasProfile = prof && prof.phone && prof.block_lot;
+        await handleAuthenticatedUser(session.user);
         setLoading(false);
-        if (!hasProfile) {
-          const meta = session.user.user_metadata;
-          if (meta?.phone && meta?.block_lot) {
-            await supabase.from('profiles').update({
-              phone: meta.phone,
-              block_lot: meta.block_lot,
-              residence_type: meta.residence_type || 'Resident',
-            }).eq('id', session.user.id);
-
-            const { data: existingVehicles } = await supabase.from('vehicles').select('id').eq('user_id', session.user.id);
-            if ((!existingVehicles || existingVehicles.length === 0) && meta.car_name && meta.car_plate) {
-              await supabase.from('vehicles').insert({
-                user_id: session.user.id,
-                name: meta.car_name,
-                plate: meta.car_plate,
-                color: meta.car_color || 'White',
-                is_primary: true,
-              });
-            }
-
-            await loadUserData(session.user.id);
-            setActiveTab('search');
-            setScreen('home');
-          } else {
-            setScreen('complete-profile');
-          }
-        } else {
-          setActiveTab('search');
-          setScreen('home');
-        }
       } else {
         setLoading(false);
         setTimeout(() => setScreen('login'), 1800);
@@ -337,12 +299,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const contextValue = useMemo(() => ({
     loading, configLoaded, config, configDbId, adminId, currentUser, authUser, isAdmin, adminToken, adminInviteCode, profile, cars, bookings,
-    globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
+    globalBookings, occupiedSlots, screen, activeTab,
     setScreen, setActiveTab, setConfig, setConfigDbId, setAdminId, setCurrentUser, setIsAdmin,
-    setAdminToken, setAdminInviteCode, setProfile, setCars, setBookings, setGlobalBookings, setRegisteredUsers,
+    setAdminToken, setAdminInviteCode, setProfile, setCars, setBookings, setGlobalBookings,
     setOccupiedSlots, buildLocs, checkExpired, getUserPayable, logout, loadUserData, reloadConfig,
   }), [loading, configLoaded, config, configDbId, adminId, currentUser, authUser, isAdmin, adminToken, adminInviteCode, profile, cars, bookings,
-    globalBookings, registeredUsers, occupiedSlots, screen, activeTab,
+    globalBookings, occupiedSlots, screen, activeTab,
     buildLocs, checkExpired, getUserPayable, logout, loadUserData, reloadConfig]);
 
   return (

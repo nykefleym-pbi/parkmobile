@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
@@ -15,7 +15,7 @@ export default function TicketsScreen() {
   const [penForm, setPenForm] = useState({ days: '', notes: '' });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  checkExpired();
+  useEffect(() => { checkExpired(); }, [checkExpired]);
   const filters = ['all', 'unpaid', 'partial', 'paid', 'penalized', 'active', 'expired', 'cancelled'];
 
   let list = globalBookings.slice().reverse();

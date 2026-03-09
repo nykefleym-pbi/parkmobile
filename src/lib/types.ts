@@ -58,7 +58,7 @@ export interface RegisteredUser {
   name: string;
   email: string;
   phone: string;
-  pass: string;
+  
   blklot: string;
   restype: string;
   avatar: string | null;

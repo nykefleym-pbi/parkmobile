@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.validate-invite-code]
 verify_jwt = false
+
+[functions.create-booking]
+verify_jwt = false
