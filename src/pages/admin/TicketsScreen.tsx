@@ -14,6 +14,7 @@ export default function TicketsScreen() {
   const [payForm, setPayForm] = useState({ amount: '', method: 'GCash', date: isoDate(today()), receipt: '', issued: false });
   const [penForm, setPenForm] = useState({ days: '', notes: '' });
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmingPay, setConfirmingPay] = useState(false);
 
   useEffect(() => { checkExpired(); }, [checkExpired]);
   const filters = ['all', 'unpaid', 'partial', 'paid', 'penalized', 'active', 'expired', 'cancelled'];
@@ -29,32 +30,40 @@ export default function TicketsScreen() {
   const penBk = penTarget ? globalBookings.find(b => b.id === penTarget) : null;
 
   async function confirmPayment() {
-    if (!payBk) return;
-    const amt = parseFloat(payForm.amount) || 0;
-    if (amt <= 0) { alert('Enter a valid amount.'); return; }
-    const rem = remaining(payBk);
-    if (amt > rem) { alert(`Amount exceeds balance of ₱${rem.toLocaleString()}.`); return; }
+  if (!payBk) return;
+  const amt = parseFloat(payForm.amount) || 0;
+  if (amt <= 0) { toast.error('Enter a valid amount.'); return; }
+  const rem = remaining(payBk);
+  if (amt > rem) { toast.error(`Amount exceeds balance of ${formatPeso(rem)}.`); return; }
 
-    const insertData = {
-      booking_id: payBk.dbId, amount: amt, method: payForm.method,
-      transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
-    };
-
-    const { data: res, error } = await supabase.functions.invoke('admin-action', {
-      body: { token: adminToken, action: 'insert_payment', data: insertData },
-    });
-
-    if (error || res?.error) {
-      toast.error(res?.error || 'Failed to record payment');
-      return;
-    }
-
-    setGlobalBookings(prev => prev.map(b => b.id === payTarget ? {
-      ...b, payments: [...b.payments, { amount: amt, method: payForm.method, date: payForm.date, receipt: payForm.receipt, receiptIssued: payForm.issued }]
-    } : b));
-    setPayTarget(null);
-    toast.success('Payment recorded');
+  // First click: enter confirm state. Second click: actually post.
+  if (!confirmingPay) {
+    setConfirmingPay(true);
+    return;
   }
+
+  const insertData = {
+    booking_id: payBk.dbId, amount: amt, method: payForm.method,
+    transaction_date: payForm.date, receipt_number: payForm.receipt || null, receipt_issued: payForm.issued,
+  };
+
+  const { data: res, error } = await supabase.functions.invoke('admin-action', {
+    body: { token: adminToken, action: 'insert_payment', data: insertData },
+  });
+
+  if (error || res?.error) {
+    toast.error(res?.error || 'Failed to record payment');
+    setConfirmingPay(false);
+    return;
+  }
+
+  setGlobalBookings(prev => prev.map(b => b.id === payTarget ? {
+    ...b, payments: [...b.payments, { amount: amt, method: payForm.method, date: payForm.date, receipt: payForm.receipt, receiptIssued: payForm.issued }]
+  } : b));
+  setPayTarget(null);
+  setConfirmingPay(false);
+  toast.success(`Payment of ${formatPeso(amt)} recorded`);
+}
 
   async function confirmPenalty() {
     if (!penBk || penBk.penalty) return;
@@ -178,9 +187,19 @@ export default function TicketsScreen() {
             <div className="pa-f-group"><label className="pa-f-label">Receipt Number</label><input className="pa-f-input" placeholder="e.g. RCT-2026-001" value={payForm.receipt} onChange={e => { const v = e.target.value; setPayForm(p => ({ ...p, receipt: v, issued: v ? p.issued : false })); }} /></div>
             <label className="pa-f-check" style={{ opacity: payForm.receipt ? 1 : 0.5, pointerEvents: payForm.receipt ? 'auto' : 'none' }}><input type="checkbox" checked={payForm.issued} disabled={!payForm.receipt} onChange={e => setPayForm(p => ({ ...p, issued: e.target.checked }))} /><div className="pa-ck" />Receipt issued to resident</label>
             <div className="pa-modal-btns">
-              <button className="pa-m-cancel" onClick={() => setPayTarget(null)}>Cancel</button>
-              <button className="pa-m-confirm" style={{ background: 'var(--pa-grn)' }} onClick={confirmPayment}>Confirm Payment</button>
-            </div>
+  <button className="pa-m-cancel" onClick={() => { setPayTarget(null); setConfirmingPay(false); }}>
+    {confirmingPay ? 'Back' : 'Cancel'}
+  </button>
+  <button
+    className="pa-m-confirm"
+    style={{ background: confirmingPay ? '#EF6C00' : 'var(--pa-grn)' }}
+    onClick={confirmPayment}
+  >
+    {confirmingPay
+      ? `Yes, record ${formatPeso(parseFloat(payForm.amount) || 0)}`
+      : 'Review & Confirm'}
+  </button>
+</div>
           </div>
         </div>
       )}
