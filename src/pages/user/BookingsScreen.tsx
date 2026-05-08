@@ -3,11 +3,11 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
-import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Booking } from '@/lib/types';
 
 export default function BookingsScreen() {
-  const { config, bookings, setBookings, setOccupiedSlots, checkExpired, getUserPayable, logout, setScreen } = useApp();
+  const { config, bookings, setBookings, setOccupiedSlots, checkExpired, getUserPayable, setScreen } = useApp();
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [warnPaidId, setWarnPaidId] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export default function BookingsScreen() {
   if (!bookings.length) {
     return (
       <div className="pa-screen-content">
-        <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+        <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
         <div className="pa-hdr pa-fu"><div className="pa-community">{config.subdiv}</div><h1>My <span className="pa-serif">bookings</span></h1></div>
         <div className="pa-empty pa-fu pa-d1"><div className="pa-ico">🅿️</div><h3>No bookings yet</h3><p>Reserve a parking spot to get started.</p></div>
       </div>
@@ -58,7 +58,7 @@ export default function BookingsScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">{config.subdiv}</div><h1>My <span className="pa-serif">bookings</span></h1></div>
 
       <div className="pa-payable-card pa-fu pa-d1">
