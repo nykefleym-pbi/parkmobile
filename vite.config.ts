@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => ({
       injectRegister: "script-defer",
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
-        name: "ParkAssist",
-        short_name: "ParkAssist",
+        name: "ParkMobile",
+        short_name: "ParkMobile",
         description: "Community parking management app for residents",
         theme_color: "#16a34a",
         background_color: "#ffffff",
