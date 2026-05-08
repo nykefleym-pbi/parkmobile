@@ -4,9 +4,10 @@ import { applyTheme, THEMES } from '@/lib/themes';
 import { autoPrefix } from '@/lib/helpers';
 import { LogOut, Copy, RefreshCw, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function SettingsScreen() {
-  const { config, setConfig, configDbId, adminToken, adminInviteCode, setAdminInviteCode, logout } = useApp();
+  const { config, setConfig, configDbId, adminToken, adminInviteCode, setAdminInviteCode, logout, globalBookings } = useApp();
   const [regenerating, setRegenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -91,7 +92,7 @@ export default function SettingsScreen() {
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files?.[0]) return;
     const f = e.target.files[0];
-    if (!['image/png', 'image/svg+xml'].includes(f.type)) { alert('Only PNG or SVG files.'); return; }
+    if (!['image/png', 'image/svg+xml'].includes(f.type)) { toast.error('Only PNG or SVG files allowed.'); return; }
     const r = new FileReader();
     r.onload = ev => updateConfig({ logo: ev.target?.result as string });
     r.readAsDataURL(f);
