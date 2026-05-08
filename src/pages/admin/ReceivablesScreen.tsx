@@ -2,10 +2,9 @@ import React from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPeso } from '@/lib/helpers';
 import { totalOwed, totalPaid, remaining, penaltyAmt } from '@/lib/booking-utils';
-import { LogOut } from 'lucide-react';
 
 export default function ReceivablesScreen() {
-  const { globalBookings, checkExpired, logout } = useApp();
+  const { globalBookings, checkExpired } = useApp();
   
   React.useEffect(() => { checkExpired(); }, []);
 
@@ -22,7 +21,7 @@ export default function ReceivablesScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">Admin</div><h1>Top <span className="pa-serif">receivables</span></h1></div>
 
       {!sorted.length ? (
