@@ -19,16 +19,24 @@ export default function TicketScreen() {
   return (
     <div className="pa-screen-content">
       <div className="pa-sbar" />
-      <div className="pa-tc">
-        <div className="pa-tk-top-row pa-pop">
-          <div className="pa-sc-chk">
-            <Check size={22} stroke="#2D6A4F" strokeWidth={2.5} />
-          </div>
-          <p style={{ fontSize: 16, fontWeight: 600, flex: 1 }}>Booking confirmed</p>
-          <button className="pa-tk-link" onClick={() => { setActiveTab('bookings'); setScreen('home'); }}>
-            My Bookings →
-          </button>
-        </div>
+      <div className="pa-sbar" style={{ justifyContent: 'space-between' }}>
+  <button className="pa-back pa-fu" onClick={() => { setActiveTab('search'); setScreen('home'); }}>
+    <ArrowLeft size={18} /> Home
+  </button>
+  <button
+    className="pa-tk-link"
+    onClick={() => { setActiveTab('bookings'); setScreen('home'); }}
+  >
+    My Bookings →
+  </button>
+</div>
+<div className="pa-tc">
+  <div className="pa-tk-top-row pa-pop" style={{ justifyContent: 'center' }}>
+    <div className="pa-sc-chk">
+      <Check size={22} stroke="var(--pa-grn)" strokeWidth={2.5} />
+    </div>
+    <p style={{ fontSize: 16, fontWeight: 600 }}>Booking confirmed</p>
+  </div>
         <div className="pa-ticket pa-fu pa-d1">
           <div className="pa-tkhd">
             <h2>Parking Pass</h2>
