@@ -28,7 +28,8 @@ export default function ProfileScreen() {
 
   async function saveCar() {
     const { name, plate, color, primary } = carForm;
-    if (!name || !plate) { alert('Fill in car name and plate.'); return; }
+    toast.error('Please fill in both car name and plate.');
+return; }
     if (saving) return;
     setSaving(true);
     try {
@@ -72,7 +73,8 @@ export default function ProfileScreen() {
   }
 
   async function deleteCar(i: number) {
-    if (cars.length <= 1) { alert('Need at least one vehicle.'); return; }
+    toast.error('You need at least one registered vehicle.');
+return; }
     if (saving) return;
     setSaving(true);
     try {
