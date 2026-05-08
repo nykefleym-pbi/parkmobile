@@ -1,3 +1,4 @@
+import AppLoadingSkeleton from './components/AppLoadingSkeleton';
 import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
