@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
@@ -8,7 +8,10 @@ import { toast } from 'sonner';
 
 export default function TicketsScreen() {
   const { globalBookings, setGlobalBookings, checkExpired, adminToken } = useApp();
-  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'cancelled'>('all');
+  const [showPenalizedOnly, setShowPenalizedOnly] = useState(false);
   const [payTarget, setPayTarget] = useState<string | null>(null);
   const [penTarget, setPenTarget] = useState<string | null>(null);
   const [payForm, setPayForm] = useState({ amount: '', method: 'GCash', date: isoDate(today()), receipt: '', issued: false });
@@ -17,14 +20,31 @@ export default function TicketsScreen() {
   const [confirmingPay, setConfirmingPay] = useState(false);
 
   useEffect(() => { checkExpired(); }, [checkExpired]);
-  const filters = ['all', 'unpaid', 'partial', 'paid', 'penalized', 'active', 'expired', 'cancelled'];
 
-  let list = globalBookings.slice().reverse();
-  if (filter === 'unpaid') list = list.filter(b => !totalPaid(b) && remaining(b) > 0);
-  else if (filter === 'partial') list = list.filter(b => isPartiallyPaid(b));
-  else if (filter === 'paid') list = list.filter(b => isFullyPaid(b));
-  else if (filter === 'penalized') list = list.filter(b => b.penalty);
-  else if (filter !== 'all') list = list.filter(b => b.status === filter);
+  const list = useMemo(() => {
+    let l = globalBookings.slice().reverse();
+
+    if (paymentFilter === 'unpaid') l = l.filter(b => !totalPaid(b) && remaining(b) > 0);
+    else if (paymentFilter === 'partial') l = l.filter(b => isPartiallyPaid(b));
+    else if (paymentFilter === 'paid') l = l.filter(b => isFullyPaid(b));
+
+    if (statusFilter !== 'all') l = l.filter(b => b.status === statusFilter);
+    if (showPenalizedOnly) l = l.filter(b => b.penalty);
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      l = l.filter(b =>
+        b.userName.toLowerCase().includes(q) ||
+        b.userEmail.toLowerCase().includes(q) ||
+        b.userBlklot.toLowerCase().includes(q) ||
+        b.car.plate.toLowerCase().includes(q) ||
+        b.slotId.toLowerCase().includes(q) ||
+        b.id.toLowerCase().includes(q)
+      );
+    }
+
+    return l;
+  }, [globalBookings, paymentFilter, statusFilter, showPenalizedOnly, search]);
 
   const payBk = payTarget ? globalBookings.find(b => b.id === payTarget) : null;
   const penBk = penTarget ? globalBookings.find(b => b.id === penTarget) : null;
@@ -98,12 +118,41 @@ export default function TicketsScreen() {
       <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">Admin</div><h1>All <span className="pa-serif">tickets</span></h1></div>
 
-      <div className="pa-filter-tabs">
-        {filters.map(f => (
-          <button key={f} className={`pa-filter-tab ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
+      <div style={{ padding: '0 24px 12px' }} className="pa-fu pa-d1">
+        <input
+          className="pa-f-input"
+          placeholder="Search resident, plate, slot, block/lot…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginBottom: 10 }}
+        />
+      </div>
+
+      <div className="pa-filter-tabs pa-fu pa-d1">
+        {(['all', 'unpaid', 'partial', 'paid'] as const).map(f => (
+          <button key={f} className={`pa-filter-tab ${paymentFilter === f ? 'on' : ''}`} onClick={() => setPaymentFilter(f)}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
+      </div>
+
+      <div className="pa-filter-tabs pa-fu pa-d1" style={{ marginBottom: 12 }}>
+        {(['all', 'active', 'expired', 'cancelled'] as const).map(f => (
+          <button key={f} className={`pa-filter-tab ${statusFilter === f ? 'on' : ''}`} onClick={() => setStatusFilter(f)}>
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+        <button
+          className={`pa-filter-tab ${showPenalizedOnly ? 'on' : ''}`}
+          onClick={() => setShowPenalizedOnly(v => !v)}
+          style={showPenalizedOnly ? { background: '#EF6C00', borderColor: '#EF6C00', color: '#fff' } : undefined}
+        >
+          ⚠ Penalized
+        </button>
+      </div>
+
+      <div style={{ padding: '0 24px 8px', fontSize: 11, color: 'var(--pa-tx2)' }} className="pa-fu pa-d1">
+        Showing {list.length} of {globalBookings.length}
       </div>
 
       {!list.length ? (
