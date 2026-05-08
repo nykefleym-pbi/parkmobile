@@ -65,16 +65,19 @@ function AppShell() {
   }, [screen, activeTab, isAdmin, locs]);
 
   return (
-    <div className="pa-phone-wrapper">
-      <div className="pa-phone">
-        <div className="pa-phone-notch" />
-        <div className={`pa-screen ${showTabs ? 'with-tabs' : ''}`}>
-          {content}
-        </div>
-        {showTabs && <BottomTabBar />}
+  <div
+    className="pa-phone-wrapper"
+    data-preview={new URLSearchParams(window.location.search).get('preview') === '1' || undefined}
+  >
+    <div className="pa-phone">
+      <div className="pa-phone-notch" />
+      <div className={`pa-screen ${showTabs ? 'with-tabs' : ''}`}>
+        {content}
       </div>
+      {showTabs && <BottomTabBar />}
     </div>
-  );
+  </div>
+);
 }
 
 export default function Index() {
