@@ -142,7 +142,7 @@ export default function ProfileScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">{config.subdiv}</div><h1>Profile</h1></div>
       <div style={{ padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 28 }} className="pa-fu pa-d1">
@@ -201,6 +201,14 @@ export default function ProfileScreen() {
         </div>
         <div className="pa-prow pa-fu pa-d5" style={{ border: 'none' }} onClick={() => setScreen('help')}>
           <span>Help & Support</span>
+          <div className="pa-pval"><ChevronRight size={16} /></div>
+        </div>
+        <div
+          className="pa-prow pa-fu pa-d5"
+          style={{ border: 'none', marginTop: 16, color: 'var(--pa-red)' }}
+          onClick={logout}
+        >
+          <span style={{ fontWeight: 600 }}><LogOut size={14} style={{ verticalAlign: -2, marginRight: 6 }} />Sign out</span>
           <div className="pa-pval"><ChevronRight size={16} /></div>
         </div>
       </div>
