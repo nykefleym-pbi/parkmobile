@@ -2,10 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPeso, fmtShortMonth, today } from '@/lib/helpers';
 import { totalPaid, remaining, penaltyAmt } from '@/lib/booking-utils';
-import { LogOut } from 'lucide-react';
 
 export default function DashboardScreen() {
-  const { config, globalBookings, checkExpired, logout, setActiveTab, setScreen } = useApp();
+  const { config, globalBookings, checkExpired, setActiveTab, setScreen } = useApp();
   
   // Run checkExpired in effect instead of render body
   React.useEffect(() => { checkExpired(); }, []);
@@ -64,7 +63,7 @@ const periodUnpaid = periodAll.reduce((s, b) => s + remaining(b), 0);
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
           {config.logo ? (
