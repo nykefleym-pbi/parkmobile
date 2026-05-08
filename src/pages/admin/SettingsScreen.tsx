@@ -153,6 +153,13 @@ export default function SettingsScreen() {
     return;
   }
 
+    // Confirmation step
+   const ok = window.confirm(
+     'You are about to change your admin password. ' +
+     'You will need the new password to log in next time. Continue?'
+   );
+   if (!ok) return;
+
   setChangingPw(true);
   try {
     const res = await adminAction('change_password', { current_password: currentPw, new_password: newPw });
@@ -173,7 +180,7 @@ export default function SettingsScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">Admin</div><h1>Settings</h1></div>
       <div style={{ padding: '0 24px' }}>
 
