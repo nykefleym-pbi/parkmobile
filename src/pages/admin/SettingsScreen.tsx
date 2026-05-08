@@ -293,6 +293,26 @@ export default function SettingsScreen() {
           );
         })}
         <button className="pa-bbk pa-fu pa-d5" style={{ fontSize: 14, padding: 14, marginBottom: 20 }} onClick={addSpace}>+ Add New Space</button>
+        <div
+          style={{
+            marginTop: 32,
+            marginBottom: 20,
+            padding: '14px 16px',
+            background: 'var(--pa-sf)',
+            border: '1px solid var(--pa-brd)',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            color: 'var(--pa-red)',
+          }}
+          onClick={logout}
+        >
+          <span style={{ fontWeight: 600, fontSize: 14 }}>
+            <LogOut size={14} style={{ verticalAlign: -2, marginRight: 6 }} />Sign out
+          </span>
+        </div>
       </div>
     </div>
   );
