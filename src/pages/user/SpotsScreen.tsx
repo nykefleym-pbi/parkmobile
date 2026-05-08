@@ -23,42 +23,49 @@ export default function SpotsScreen({ locIdx, highlightSlot }: SpotsScreenProps)
   if (!loc) return null;
 
   async function confirmBooking() {
-    if (!selectedSpot || !availCars.length || !authUser || confirmed) return;
-    const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
+  if (!selectedSpot || !availCars.length || !authUser || confirmed) return;
+  const car = availCars[selCarIdx >= availCars.length ? 0 : selCarIdx];
 
-    if (!car.dbId) {
-      toast.error('Vehicle not synced. Please go to Profile and re-save it.');
-      return;
-    }
-
-    setConfirmed(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-booking', {
-        body: { space_name: loc.name, slot_id: selectedSpot, vehicle_id: car.dbId },
-      });
-
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || 'Booking failed');
-      }
-
-      const b = data.booking;
-      const bk = {
-        dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
-        startDate: b.start_date, endDate: b.end_date, status: b.status,
-        cancelledDate: b.cancelled_date,
-        car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
-        userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
-        rate: +b.rate, userId: b.user_id, payments: [], penalty: null,
-      };
-      setBookings(prev => [...prev, bk]);
-      setOccupiedSlots(prev => [...prev, selectedSpot]);
-      setBooking(bk);
-      setTimeout(() => setScreen('ticket'), 1100);
-    } catch (err: any) {
-      setConfirmed(false);
-      toast.error(err?.message || 'Booking failed. Could not complete your reservation.');
-    }
+  if (!car.dbId) {
+    toast.error('Vehicle not synced. Please go to Profile and re-save it.');
+    return;
   }
+
+  setConfirmed(true);
+  const reservedSlot = selectedSpot;
+
+  try {
+    const { data, error } = await supabase.functions.invoke('create-booking', {
+      body: { space_name: loc.name, slot_id: reservedSlot, vehicle_id: car.dbId },
+    });
+
+    if (error || data?.error) {
+      throw new Error(data?.error || error?.message || 'Booking failed');
+    }
+
+    const b = data.booking;
+    const bk = {
+      dbId: b.id, id: b.booking_code, slotId: b.slot_id, locName: b.space_name,
+      startDate: b.start_date, endDate: b.end_date, status: b.status,
+      cancelledDate: b.cancelled_date,
+      car: { name: b.vehicle_name, plate: b.vehicle_plate, color: b.vehicle_color || 'White' },
+      userName: b.user_name, userEmail: b.user_email, userBlklot: b.user_block_lot || '',
+      rate: +b.rate, userId: b.user_id, payments: [], penalty: null,
+    };
+    setBookings(prev => [...prev, bk]);
+    setOccupiedSlots(prev => prev.includes(reservedSlot) ? prev : [...prev, reservedSlot]);
+    setBooking(bk);
+    setTimeout(() => setScreen('ticket'), 1100);
+  } catch (err: any) {
+    // Roll back: clear local optimism and unselect
+    setConfirmed(false);
+    setSelectedSpot(null);
+    // Refresh occupancy from server so phantom-occupied state is healed
+    const { data: occ } = await supabase.rpc('get_occupied_slots');
+    if (occ) setOccupiedSlots((occ as any[]).map(b => b.slot_id));
+    toast.error(err?.message || 'Booking failed. The slot may have just been taken — try another.');
+  }
+}
 
   return (
     <div className="pa-screen-content">
