@@ -20,9 +20,24 @@ export default function DashboardScreen() {
   const unpaidTickets = all.filter(b => remaining(b) > 0);
   const totalPen = all.reduce((s, b) => s + penaltyAmt(b), 0);
 
-  const months: Date[] = [];
+  const [period, setPeriod] = useState<'30d' | '90d' | '6m' | 'ytd' | 'all'>('6m');
+
+const { months, mRevenue, mBookings, periodAll } = useMemo(() => {
   const now = today();
-  for (let i = 5; i >= 0; i--) months.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
+  const cutoff = new Date(now);
+  if (period === '30d') cutoff.setDate(cutoff.getDate() - 30);
+  else if (period === '90d') cutoff.setDate(cutoff.getDate() - 90);
+  else if (period === '6m') cutoff.setMonth(cutoff.getMonth() - 6);
+  else if (period === 'ytd') cutoff.setMonth(0, 1);
+  else cutoff.setFullYear(2000);
+
+  const months: Date[] = [];
+  const monthsBack = period === '30d' ? 1 : period === '90d' ? 3 : period === '6m' ? 6 : period === 'ytd' ? now.getMonth() + 1 : 12;
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    months.push(new Date(now.getFullYear(), now.getMonth() - i, 1));
+  }
+
+  const periodAll = all.filter(b => new Date(b.startDate + 'T00:00:00') >= cutoff);
 
   const mRevenue = months.map(m => {
     const y = m.getFullYear(), mo = m.getMonth();
@@ -40,7 +55,12 @@ export default function DashboardScreen() {
     }).length;
   });
 
-  const maxR = Math.max(...mRevenue, 1), maxB = Math.max(...mBookings, 1);
+  return { months, mRevenue, mBookings, periodAll };
+}, [all, period]);
+
+const maxR = Math.max(...mRevenue, 1), maxB = Math.max(...mBookings, 1);
+const periodRevenue = periodAll.reduce((s, b) => s + totalPaid(b), 0);
+const periodUnpaid = periodAll.reduce((s, b) => s + remaining(b), 0);
 
   return (
     <div className="pa-screen-content">
@@ -59,17 +79,25 @@ export default function DashboardScreen() {
         <h1>Overview</h1>
       </div>
 
-      <div className="pa-stat-grid pa-fu pa-d1">
-        <div className="pa-stat-card"><div className="pa-st-label">Occupied</div><div className="pa-st-val">{occupied} <span className="pa-st-unit">/ {TS}</span></div></div>
-        <div className="pa-stat-card"><div className="pa-st-label">Available</div><div className="pa-st-val">{available}</div></div>
-        <div className="pa-stat-card">
-          <div className="pa-st-label">Occupancy</div><div className="pa-st-val">{occRate}%</div>
-          <div style={{ marginTop: 8, height: 6, background: 'var(--pa-soft)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${occRate}%`, background: 'var(--pa-grn)', borderRadius: 3 }} />
-          </div>
-        </div>
-        <div className="pa-stat-card"><div className="pa-st-label">Revenue</div><div className="pa-st-val sm">{formatPeso(revenue, 0)}</div><div className="pa-st-sub">collected</div></div>
-        <div className="pa-stat-card"><div className="pa-st-label">Unpaid</div><div className="pa-st-val sm" style={{ color: 'var(--pa-red)' }}>{formatPeso(unpaidAmt, 0)}</div><div className="pa-st-sub">{unpaidTickets.length} tickets</div></div>
+      <div className="pa-filter-tabs pa-fu pa-d1" style={{ marginBottom: 18 }}>
+  {([
+    { k: '30d', label: '30 days' },
+    { k: '90d', label: '90 days' },
+    { k: '6m', label: '6 months' },
+    { k: 'ytd', label: 'YTD' },
+    { k: 'all', label: 'All time' },
+  ] as const).map(p => (
+    <button
+      key={p.k}
+      className={`pa-filter-tab ${period === p.k ? 'on' : ''}`}
+      onClick={() => setPeriod(p.k)}
+    >
+      {p.label}
+    </button>
+  ))}
+</div>
+        <div className="pa-stat-card"><div className="pa-st-label">Revenue</div><div className="pa-st-val sm">{formatPeso(periodRevenue, 0)}</div><div className="pa-st-sub">collected</div></div>
+<div className="pa-stat-card"><div className="pa-st-label">Unpaid</div><div className="pa-st-val sm" style={{ color: 'var(--pa-red)' }}>{formatPeso(periodUnpaid, 0)}</div><div className="pa-st-sub">{periodAll.filter(b => remaining(b) > 0).length} tickets</div></div>
         <div className="pa-stat-card"><div className="pa-st-label">Penalties</div><div className="pa-st-val sm" style={{ color: '#EF6C00' }}>{formatPeso(totalPen, 0)}</div><div className="pa-st-sub">{all.filter(b => b.penalty).length} applied</div></div>
       </div>
 
