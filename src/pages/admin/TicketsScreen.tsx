@@ -18,6 +18,7 @@ export default function TicketsScreen() {
   const [penForm, setPenForm] = useState({ days: '', notes: '' });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingPay, setConfirmingPay] = useState(false);
+  const [confirmingPen, setConfirmingPen] = useState(false);
 
   useEffect(() => { checkExpired(); }, [checkExpired]);
 
@@ -88,8 +89,13 @@ export default function TicketsScreen() {
   async function confirmPenalty() {
     if (!penBk || penBk.penalty) return;
     const days = parseInt(penForm.days) || 0;
-    if (days <= 0) { alert('Enter at least 1 day.'); return; }
+    if (days <= 0) { toast.error('Enter at least 1 day.'); return; }
     const amt = Math.round(days * bkDaily(penBk) * 100) / 100;
+    // First click: enter confirm state. Second click: actually post.
+     if (!confirmingPen) {
+       setConfirmingPen(true);
+       return;
+     }
     const dt = isoDate(today());
 
     const insertData = {
@@ -103,6 +109,7 @@ export default function TicketsScreen() {
 
     if (error || res?.error) {
       toast.error(res?.error || 'Failed to apply penalty');
+      setConfirmingPen(false);
       return;
     }
 
@@ -110,6 +117,7 @@ export default function TicketsScreen() {
       ...b, penalty: { days, amount: amt, date: dt, notes: penForm.notes }
     } : b));
     setPenTarget(null);
+    setConfirmingPen(false);
     toast.success('Penalty applied');
   }
 
@@ -276,9 +284,19 @@ export default function TicketsScreen() {
             )}
             <div className="pa-f-group"><label className="pa-f-label">Notes (optional)</label><input className="pa-f-input" placeholder="e.g. Car still parked after expiry" value={penForm.notes} onChange={e => setPenForm(p => ({ ...p, notes: e.target.value }))} /></div>
             <div className="pa-modal-btns">
-              <button className="pa-m-cancel" onClick={() => setPenTarget(null)}>Cancel</button>
-              <button className="pa-m-confirm" style={{ background: '#EF6C00' }} onClick={confirmPenalty}>Apply Penalty</button>
-            </div>
+     <button className="pa-m-cancel" onClick={() => { setPenTarget(null); setConfirmingPen(false); }}>
+       {confirmingPen ? 'Back' : 'Cancel'}
+     </button>
+     <button
+       className="pa-m-confirm"
+       style={{ background: confirmingPen ? 'var(--pa-red)' : '#EF6C00' }}
+       onClick={confirmPenalty}
+     >
+       {confirmingPen
+         ? `Yes, apply ${penForm.days}d penalty (${formatPeso(Math.round(parseInt(penForm.days || '0') * bkDaily(penBk) * 100) / 100)})`
+         : 'Review & Confirm'}
+     </button>
+   </div>
           </div>
         </div>
       )}
