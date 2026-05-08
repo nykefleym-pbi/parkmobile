@@ -3,11 +3,11 @@ import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
-import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TicketsScreen() {
-  const { globalBookings, setGlobalBookings, checkExpired, logout, adminToken } = useApp();
+  const { globalBookings, setGlobalBookings, checkExpired, adminToken } = useApp();
   const [filter, setFilter] = useState('all');
   const [payTarget, setPayTarget] = useState<string | null>(null);
   const [penTarget, setPenTarget] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export default function TicketsScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar"><button className="pa-logout-btn" onClick={logout}><LogOut size={14} /> Logout</button></div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu"><div className="pa-community">Admin</div><h1>All <span className="pa-serif">tickets</span></h1></div>
 
       <div className="pa-filter-tabs">
