@@ -65,11 +65,28 @@ export default function SettingsScreen() {
   }
 
   async function removeSpace(idx: number) {
-    if (config.spaces.length <= 1) { alert('Need at least one space.'); return; }
-    const sp = config.spaces[idx];
-    if (sp.id) await adminAction('delete_space', { id: sp.id });
-    setConfig(prev => ({ ...prev, spaces: prev.spaces.filter((_, i) => i !== idx) }));
+  if (config.spaces.length <= 1) {
+    toast.error('You need at least one space.');
+    return;
   }
+  const sp = config.spaces[idx];
+
+  // Count active bookings on this space — best-effort using globalBookings if available
+  const activeBookings = globalBookings.filter(
+    b => b.locName === sp.name && b.status === 'active'
+  ).length;
+
+  const warning = activeBookings > 0
+    ? `"${sp.name}" has ${activeBookings} active booking${activeBookings > 1 ? 's' : ''}. Deleting it will affect those residents. Type DELETE to confirm.`
+    : `Delete "${sp.name}"? This cannot be undone. Type DELETE to confirm.`;
+
+  const input = prompt(warning);
+  if (input !== 'DELETE') return;
+
+  if (sp.id) await adminAction('delete_space', { id: sp.id });
+  setConfig(prev => ({ ...prev, spaces: prev.spaces.filter((_, i) => i !== idx) }));
+  toast.success(`"${sp.name}" deleted`);
+}
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files?.[0]) return;
@@ -81,18 +98,27 @@ export default function SettingsScreen() {
   }
 
   async function regenerateInviteCode() {
-    setRegenerating(true);
-    try {
-      const res = await adminAction('regenerate_invite_code', {});
-      if (res?.invite_code) {
-        setAdminInviteCode(res.invite_code);
-      }
-    } catch (e) {
-      console.error('Failed to regenerate invite code:', e);
-    } finally {
-      setRegenerating(false);
+  const ok = window.confirm(
+    'Regenerating will invalidate the current code immediately. ' +
+    'Anyone you\'ve already shared the old code with won\'t be able to sign up. Continue?'
+  );
+  if (!ok) return;
+
+  setRegenerating(true);
+  try {
+    const res = await adminAction('regenerate_invite_code', {});
+    if (res?.invite_code) {
+      setAdminInviteCode(res.invite_code);
+      toast.success('Invite code regenerated');
+    } else {
+      toast.error('Failed to regenerate code');
     }
+  } catch (e) {
+    toast.error('Server error. Please try again.');
+  } finally {
+    setRegenerating(false);
   }
+}
 
   function copyInviteCode() {
     if (adminInviteCode) {
@@ -103,30 +129,46 @@ export default function SettingsScreen() {
   }
 
   async function handleChangePassword() {
-    setPwError('');
-    setPwSuccess('');
+  setPwError('');
+  setPwSuccess('');
 
-    if (!currentPw) { setPwError('Enter your current password.'); return; }
-    if (!/^\d{6,8}$/.test(newPw)) { setPwError('New password must be 6-8 digits only.'); return; }
-    if (newPw !== confirmPw) { setPwError('New passwords do not match.'); return; }
+  if (!currentPw) { setPwError('Enter your current password.'); return; }
 
-    setChangingPw(true);
-    try {
-      const res = await adminAction('change_password', { current_password: currentPw, new_password: newPw });
-      if (res?.ok) {
-        setPwSuccess('Password changed successfully!');
-        setCurrentPw('');
-        setNewPw('');
-        setConfirmPw('');
-      } else {
-        setPwError(res?.error || 'Failed to change password.');
-      }
-    } catch {
-      setPwError('Server error. Please try again.');
-    } finally {
-      setChangingPw(false);
-    }
+  // Real password policy: 10+ chars, mixed
+  if (newPw.length < 10) {
+    setPwError('New password must be at least 10 characters.');
+    return;
   }
+  if (!/[A-Za-z]/.test(newPw) || !/[0-9]/.test(newPw)) {
+    setPwError('New password must include both letters and numbers.');
+    return;
+  }
+  if (newPw === currentPw) {
+    setPwError('New password must differ from the current one.');
+    return;
+  }
+  if (newPw !== confirmPw) {
+    setPwError('New passwords do not match.');
+    return;
+  }
+
+  setChangingPw(true);
+  try {
+    const res = await adminAction('change_password', { current_password: currentPw, new_password: newPw });
+    if (res?.ok) {
+      setPwSuccess('Password changed successfully.');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } else {
+      setPwError(res?.error || 'Failed to change password. Check your current password.');
+    }
+  } catch {
+    setPwError('Server error. Please try again.');
+  } finally {
+    setChangingPw(false);
+  }
+}
 
   return (
     <div className="pa-screen-content">
@@ -162,27 +204,27 @@ export default function SettingsScreen() {
         <div className="pa-slbl pa-fu pa-d1" style={{ padding: 0, marginBottom: 10 }}>Change Password</div>
         <div className="pa-fu pa-d1" style={{ background: 'var(--pa-sf)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <div style={{ fontSize: 11, color: 'var(--pa-tx2)', marginBottom: 12 }}>
-            <Lock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />
-            Password must be 6-8 digits only.
-          </div>
+  <Lock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 4 }} />
+  At least 10 characters with letters and numbers.
+</div>
           <div className="pa-f-group" style={{ marginBottom: 10 }}>
-            <label className="pa-f-label">Current Password</label>
-            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
-              placeholder="Enter current password" value={currentPw}
-              onChange={e => { setCurrentPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
-          </div>
-          <div className="pa-f-group" style={{ marginBottom: 10 }}>
-            <label className="pa-f-label">New Password</label>
-            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
-              placeholder="6-8 digits" value={newPw}
-              onChange={e => { setNewPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
-          </div>
-          <div className="pa-f-group" style={{ marginBottom: 12 }}>
-            <label className="pa-f-label">Confirm New Password</label>
-            <input className="pa-f-input" type="password" inputMode="numeric" maxLength={8}
-              placeholder="Re-enter new password" value={confirmPw}
-              onChange={e => { setConfirmPw(e.target.value.replace(/\D/g, '').slice(0, 8)); setPwError(''); setPwSuccess(''); }} />
-          </div>
+  <label className="pa-f-label">Current Password</label>
+  <input className="pa-f-input" type="password" autoComplete="current-password"
+    placeholder="Enter current password" value={currentPw}
+    onChange={e => { setCurrentPw(e.target.value); setPwError(''); setPwSuccess(''); }} />
+</div>
+<div className="pa-f-group" style={{ marginBottom: 10 }}>
+  <label className="pa-f-label">New Password</label>
+  <input className="pa-f-input" type="password" autoComplete="new-password"
+    placeholder="At least 10 characters, letters + numbers" value={newPw}
+    onChange={e => { setNewPw(e.target.value); setPwError(''); setPwSuccess(''); }} />
+</div>
+<div className="pa-f-group" style={{ marginBottom: 12 }}>
+  <label className="pa-f-label">Confirm New Password</label>
+  <input className="pa-f-input" type="password" autoComplete="new-password"
+    placeholder="Re-enter new password" value={confirmPw}
+    onChange={e => { setConfirmPw(e.target.value); setPwError(''); setPwSuccess(''); }} />
+</div>
           {pwError && <div style={{ fontSize: 11, color: 'var(--pa-red, #ef4444)', marginBottom: 8, fontWeight: 600 }}>{pwError}</div>}
           {pwSuccess && <div style={{ fontSize: 11, color: 'var(--pa-grn, #22c55e)', marginBottom: 8, fontWeight: 600 }}>{pwSuccess}</div>}
           <button className="pa-bbk" onClick={handleChangePassword} disabled={changingPw}
