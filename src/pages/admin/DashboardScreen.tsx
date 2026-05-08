@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { formatPeso, fmtShortMonth, today } from '@/lib/helpers';
 import { totalPaid, remaining, penaltyAmt } from '@/lib/booking-utils';
@@ -79,25 +79,35 @@ const periodUnpaid = periodAll.reduce((s, b) => s + remaining(b), 0);
         <h1>Overview</h1>
       </div>
 
-      <div className="pa-filter-tabs pa-fu pa-d1" style={{ marginBottom: 18 }}>
-  {([
-    { k: '30d', label: '30 days' },
-    { k: '90d', label: '90 days' },
-    { k: '6m', label: '6 months' },
-    { k: 'ytd', label: 'YTD' },
-    { k: 'all', label: 'All time' },
-  ] as const).map(p => (
-    <button
-      key={p.k}
-      className={`pa-filter-tab ${period === p.k ? 'on' : ''}`}
-      onClick={() => setPeriod(p.k)}
-    >
-      {p.label}
-    </button>
-  ))}
-</div>
+      <div className="pa-filter-tabs pa-fu pa-d1" style={{ marginBottom: 18, padding: '0 24px' }}>
+        {([
+          { k: '30d', label: '30 days' },
+          { k: '90d', label: '90 days' },
+          { k: '6m', label: '6 months' },
+          { k: 'ytd', label: 'YTD' },
+          { k: 'all', label: 'All time' },
+        ] as const).map(p => (
+          <button
+            key={p.k}
+            className={`pa-filter-tab ${period === p.k ? 'on' : ''}`}
+            onClick={() => setPeriod(p.k)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="pa-stat-grid pa-fu pa-d1">
+        <div className="pa-stat-card"><div className="pa-st-label">Occupied</div><div className="pa-st-val">{occupied} <span className="pa-st-unit">/ {TS}</span></div></div>
+        <div className="pa-stat-card"><div className="pa-st-label">Available</div><div className="pa-st-val">{available}</div></div>
+        <div className="pa-stat-card">
+          <div className="pa-st-label">Occupancy</div><div className="pa-st-val">{occRate}%</div>
+          <div style={{ marginTop: 8, height: 6, background: 'var(--pa-soft)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${occRate}%`, background: 'var(--pa-grn)', borderRadius: 3 }} />
+          </div>
+        </div>
         <div className="pa-stat-card"><div className="pa-st-label">Revenue</div><div className="pa-st-val sm">{formatPeso(periodRevenue, 0)}</div><div className="pa-st-sub">collected</div></div>
-<div className="pa-stat-card"><div className="pa-st-label">Unpaid</div><div className="pa-st-val sm" style={{ color: 'var(--pa-red)' }}>{formatPeso(periodUnpaid, 0)}</div><div className="pa-st-sub">{periodAll.filter(b => remaining(b) > 0).length} tickets</div></div>
+        <div className="pa-stat-card"><div className="pa-st-label">Unpaid</div><div className="pa-st-val sm" style={{ color: 'var(--pa-red)' }}>{formatPeso(periodUnpaid, 0)}</div><div className="pa-st-sub">{periodAll.filter(b => remaining(b) > 0).length} tickets</div></div>
         <div className="pa-stat-card"><div className="pa-st-label">Penalties</div><div className="pa-st-val sm" style={{ color: '#EF6C00' }}>{formatPeso(totalPen, 0)}</div><div className="pa-st-sub">{all.filter(b => b.penalty).length} applied</div></div>
       </div>
 
