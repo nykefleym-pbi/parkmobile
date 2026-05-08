@@ -8,16 +8,31 @@ export default function ReceivablesScreen() {
   
   React.useEffect(() => { checkExpired(); }, []);
 
-  const userMap: Record<string, { name: string; blklot: string; email: string; totalOwedAmt: number; totalPaidAmt: number; penalties: number; count: number }> = {};
+  const userMap: Record<string, {
+    name: string; blklot: string; email: string; userId: string;
+    totalOwedAmt: number; totalPaidAmt: number; penalties: number; count: number;
+  }> = {};
+
   globalBookings.forEach(bk => {
-    if (!userMap[bk.userEmail]) userMap[bk.userEmail] = { name: bk.userName, blklot: bk.userBlklot, email: bk.userEmail, totalOwedAmt: 0, totalPaidAmt: 0, penalties: 0, count: 0 };
-    userMap[bk.userEmail].totalOwedAmt += totalOwed(bk);
-    userMap[bk.userEmail].totalPaidAmt += totalPaid(bk);
-    userMap[bk.userEmail].penalties += penaltyAmt(bk);
-    userMap[bk.userEmail].count++;
+    // Dedupe by userId so renamed/re-emailed users don't split into two rows
+    const key = bk.userId || bk.userEmail;
+    if (!userMap[key]) {
+      userMap[key] = {
+        name: bk.userName, blklot: bk.userBlklot, email: bk.userEmail, userId: bk.userId || '',
+        totalOwedAmt: 0, totalPaidAmt: 0, penalties: 0, count: 0,
+      };
+    }
+    userMap[key].totalOwedAmt += totalOwed(bk);
+    userMap[key].totalPaidAmt += totalPaid(bk);
+    userMap[key].penalties += penaltyAmt(bk);
+    userMap[key].count++;
   });
 
-  const sorted = Object.values(userMap).map(u => ({ ...u, balance: u.totalOwedAmt - u.totalPaidAmt })).filter(u => u.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 10);
+  const sorted = Object.values(userMap)
+    .map(u => ({ ...u, balance: u.totalOwedAmt - u.totalPaidAmt }))
+    .filter(u => u.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+  // removed .slice(0, 10) — show full list, scrollable
 
   return (
     <div className="pa-screen-content">
@@ -27,7 +42,7 @@ export default function ReceivablesScreen() {
       {!sorted.length ? (
         <div className="pa-empty"><div className="pa-ico">👤</div><h3>No users</h3><p>No booking data yet.</p></div>
       ) : sorted.map((u, i) => (
-        <div key={u.email} className={`pa-admin-ticket pa-fu pa-d${Math.min(i + 1, 5)}`}>
+        <div key={u.userId || u.email} className={`pa-admin-ticket pa-fu pa-d${Math.min(i + 1, 5)}`}>
           <div className="pa-at-top">
             <div className="pa-at-slot" style={{ fontSize: 14 }}>{u.name}</div>
             <div className={`pa-at-status ${u.balance > 0 ? 'unpaid' : 'paid'}`}>{u.balance > 0 ? 'Has Balance' : 'Settled'}</div>
