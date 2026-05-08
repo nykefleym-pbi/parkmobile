@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { LogOut } from 'lucide-react';
 
 export default function HomeScreen() {
-  const { config, occupiedSlots, buildLocs, logout, setScreen } = useApp();
+  const { config, occupiedSlots, buildLocs, setScreen } = useApp();
   const locs = useMemo(() => buildLocs(), [buildLocs]);
 
   function getAvail(loc: ReturnType<typeof buildLocs>[0]) {
@@ -12,11 +11,7 @@ export default function HomeScreen() {
 
   return (
     <div className="pa-screen-content">
-      <div className="pa-sbar">
-        <button className="pa-logout-btn" onClick={logout}>
-          <LogOut size={14} /> Logout
-        </button>
-      </div>
+      <div className="pa-sbar" style={{ paddingTop: 52, paddingBottom: 10 }} />
       <div className="pa-hdr pa-fu">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
           {config.logo ? (
@@ -32,6 +27,13 @@ export default function HomeScreen() {
         <p>Community parking spaces</p>
       </div>
       <div className="pa-slbl pa-fu pa-d1">Available Spaces</div>
+      {!locs.length && (
+        <div className="pa-empty pa-fu pa-d1">
+          <div className="pa-ico">🅿️</div>
+          <h3>No parking spaces yet</h3>
+          <p>Your community admin hasn't configured parking spaces yet. Check back soon.</p>
+        </div>
+      )}
       {locs.map((l, i) => {
         const a = getAvail(l);
         return (
