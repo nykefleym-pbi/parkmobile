@@ -5,6 +5,7 @@ import { fmtDate, today, isoDate, formatPeso, addDays } from '@/lib/helpers';
 import { baseFee, penaltyAmt, totalOwed, totalPaid, remaining, isFullyPaid, isPartiallyPaid, hasPaid, coverageDays, coverageEndDate, bkDaily } from '@/lib/booking-utils';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { exportTicketsCSV } from '@/lib/csv-export';
 
 export default function TicketsScreen() {
   const { globalBookings, setGlobalBookings, checkExpired, adminToken } = useApp();
@@ -159,9 +160,23 @@ export default function TicketsScreen() {
         </button>
       </div>
 
-      <div style={{ padding: '0 24px 8px', fontSize: 11, color: 'var(--pa-tx2)' }} className="pa-fu pa-d1">
-        Showing {list.length} of {globalBookings.length}
-      </div>
+      <div style={{ padding: '0 24px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="pa-fu pa-d1">
+     <div style={{ fontSize: 11, color: 'var(--pa-tx2)' }}>
+       Showing {list.length} of {globalBookings.length}
+     </div>
+     <button
+       onClick={() => exportTicketsCSV(list)}
+       disabled={!list.length}
+       style={{
+         fontSize: 11, fontWeight: 600, padding: '6px 12px',
+         background: 'var(--pa-soft)', border: 'none', borderRadius: 6,
+         cursor: 'pointer', color: 'var(--pa-tx)',
+         opacity: !list.length ? 0.4 : 1,
+       }}
+     >
+       ⬇ Export CSV
+     </button>
+   </div>
 
       {!list.length ? (
         <div className="pa-empty"><div className="pa-ico">📋</div><h3>No tickets</h3><p>No tickets match this filter.</p></div>
