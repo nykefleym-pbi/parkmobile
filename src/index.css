@@ -588,4 +588,3 @@ body {
 .pa-sc-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .pa-sc-hdr strong { font-size: 14px; }
 .pa-sc-del { font-size: 11px; font-weight: 600; color: var(--pa-red); cursor: pointer; background: none; border: none; font-family: inherit; }
-}
